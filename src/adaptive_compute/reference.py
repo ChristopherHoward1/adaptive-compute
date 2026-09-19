@@ -16,6 +16,10 @@ DEFAULT_ALPHA = 0.05
 DEFAULT_B_REF = 320
 
 
+class UnresolvedReferenceError(RuntimeError):
+    """Raised when the fixed-budget interval does not resolve a reference decision."""
+
+
 @dataclass(frozen=True)
 class ReferenceResult:
     decision: Decision
@@ -39,6 +43,7 @@ def _decision_from_interval(
     lower: float,
     upper: float,
     margin: float,
+    b_ref: int,
 ) -> Decision:
     if lower > margin:
         return "A_better"
@@ -47,10 +52,11 @@ def _decision_from_interval(
     if lower >= -margin and upper <= margin:
         return "equivalent"
 
-    # The fixed-budget reference has no abstain path. If the percentile interval
-    # straddles a margin edge, it has not resolved a directional call, so it
-    # fails to exclude the equivalence band and resolves to equivalent.
-    return "equivalent"
+    msg = (
+        f"reference interval [{lower:.12g}, {upper:.12g}] straddles ±δ={margin:.12g} "
+        f"at B_ref={b_ref}; case is boundary-adjacent or B_ref under-sized"
+    )
+    raise UnresolvedReferenceError(msg)
 
 
 def fixed_budget_reference(
@@ -88,7 +94,7 @@ def fixed_budget_reference(
     )
     estimate = float(np.mean(bootstrap.deltas))
     return ReferenceResult(
-        decision=_decision_from_interval(float(lower), float(upper), margin),
+        decision=_decision_from_interval(float(lower), float(upper), margin, b_ref),
         estimate=estimate,
         interval=(float(lower), float(upper)),
         interval_method="percentile",

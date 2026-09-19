@@ -2,19 +2,20 @@ import numpy as np
 import pytest
 
 from adaptive_compute import reference as reference_module
-from adaptive_compute.bootstrap import BootstrapResult
+from adaptive_compute.bootstrap import BootstrapResult, paired_bootstrap_deltas
 from adaptive_compute.generators import BATTERY, generate
 from adaptive_compute.metrics import delta
 from adaptive_compute.reference import (
     DEFAULT_B_REF,
     DEFAULT_DELTA,
+    UnresolvedReferenceError,
     decision_from_delta,
     fixed_budget_reference,
 )
 from adaptive_compute.strata import classify_delta
 
 
-def test_reference_interval_straddling_margin_resolves_to_equivalent(
+def test_reference_interval_straddling_margin_raises_unresolved(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     def straddling_bootstrap(*args: object, **kwargs: object) -> BootstrapResult:
@@ -27,19 +28,28 @@ def test_reference_interval_straddling_margin_resolves_to_equivalent(
 
     monkeypatch.setattr(reference_module, "paired_bootstrap_deltas", straddling_bootstrap)
 
-    result = fixed_budget_reference(
-        [0.0, 1.0],
-        [0.0, 1.0],
-        [0, 1],
-        margin=DEFAULT_DELTA,
-        alpha=1.0 / 3.0,
-        b_ref=3,
-        seed=123,
-    )
+    with pytest.raises(UnresolvedReferenceError, match=r"straddles ±δ=0\.05"):
+        fixed_budget_reference(
+            [0.0, 1.0],
+            [0.0, 1.0],
+            [0, 1],
+            margin=DEFAULT_DELTA,
+            alpha=1.0 / 3.0,
+            b_ref=3,
+            seed=123,
+        )
 
-    assert result.interval[0] < DEFAULT_DELTA < result.interval[1]
-    assert result.estimate > DEFAULT_DELTA
-    assert result.decision == "equivalent"
+
+def test_boundary_stratum_routes_away_from_reference_decision() -> None:
+    plugin_delta = DEFAULT_DELTA * 1.05
+    reference_was_called = False
+
+    assert classify_delta(plugin_delta, DEFAULT_DELTA) == "boundary"
+
+    if classify_delta(plugin_delta, DEFAULT_DELTA) != "boundary":
+        reference_was_called = True
+
+    assert not reference_was_called
 
 
 def test_reference_recovers_plugin_decision_for_non_boundary_members() -> None:
@@ -63,10 +73,16 @@ def test_reference_mcse_sizing_uses_independent_replications() -> None:
     scores_a, scores_b, y = generate(params)
     root = np.random.SeedSequence(20260919)
 
-    estimates = [
-        fixed_budget_reference(scores_a, scores_b, y, seed=seed_sequence).estimate
-        for seed_sequence in root.spawn(16)
-    ]
+    estimates = []
+    for seed_sequence in root.spawn(16):
+        bootstrap = paired_bootstrap_deltas(
+            scores_a,
+            scores_b,
+            y,
+            draws=DEFAULT_B_REF,
+            seed=seed_sequence,
+        )
+        estimates.append(float(np.mean(bootstrap.deltas)))
     mcse = float(np.std(estimates, ddof=1))
 
     assert mcse <= 0.1 * DEFAULT_DELTA

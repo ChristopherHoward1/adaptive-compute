@@ -47,33 +47,42 @@ def _check() -> int:
             return 1
 
         total_draws += first.draws_consumed
+        # Classify from the plug-in delta before invoking the fixed-budget
+        # reference; boundary members are deliberately outside recovery scoring.
         stratum = classify_delta(plugin_delta, DEFAULT_DELTA)
-        if stratum != "boundary":
-            result = fixed_budget_reference(
-                scores_a,
-                scores_b,
-                y,
-                b_ref=DEFAULT_B_REF,
-                seed=branch_seed,
+        if stratum == "boundary":
+            continue
+
+        result = fixed_budget_reference(
+            scores_a,
+            scores_b,
+            y,
+            b_ref=DEFAULT_B_REF,
+            seed=branch_seed,
+        )
+        expected = decision_from_delta(plugin_delta, DEFAULT_DELTA)
+        if result.decision != expected:
+            print(
+                f"decision recovery failed for {name}: expected {expected}, got {result.decision}",
+                file=sys.stderr,
             )
-            expected = decision_from_delta(plugin_delta, DEFAULT_DELTA)
-            if result.decision != expected:
-                print(
-                    f"decision recovery failed for {name}: "
-                    f"expected {expected}, got {result.decision}",
-                    file=sys.stderr,
-                )
-                return 1
-            total_draws += result.draws_consumed
+            return 1
+        total_draws += result.draws_consumed
 
     params, _generator = BATTERY["near_delta_boundary"]
     scores_a, scores_b, y = generate(params)
     root = np.random.SeedSequence(20260919)
     estimates = []
     for seed_sequence in root.spawn(CHECK_MCSE_REPLICATIONS):
-        result = fixed_budget_reference(scores_a, scores_b, y, seed=seed_sequence)
-        estimates.append(result.estimate)
-        total_draws += result.draws_consumed
+        bootstrap = paired_bootstrap_deltas(
+            scores_a,
+            scores_b,
+            y,
+            draws=DEFAULT_B_REF,
+            seed=seed_sequence,
+        )
+        estimates.append(float(np.mean(bootstrap.deltas)))
+        total_draws += bootstrap.draws_consumed
 
     mcse = float(np.std(estimates, ddof=1))
     if mcse > CHECK_MCSE_RHO * DEFAULT_DELTA:
