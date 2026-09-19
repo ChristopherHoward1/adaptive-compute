@@ -7,6 +7,7 @@ name = "adaptive-compute"
 version = "0.0.0"
 description = "Adaptive Compute — ML/research project (harness-scaffolded)."
 requires-python = ">=3.11"
+dependencies = ["numpy"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -21,6 +22,7 @@ select = ["E", "F", "I"]  # pycodestyle errors, pyflakes, import sorting
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
+addopts = "-p no:capture"
 
 [tool.mypy]
 python_version = "3.12"
