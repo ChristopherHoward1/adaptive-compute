@@ -18,10 +18,23 @@ class BootstrapResult:
 
 
 def seed_branches(seed: int | np.random.SeedSequence) -> tuple[np.random.SeedSequence, ...]:
-    """Return independent reference/adaptive branches from a root seed."""
+    """Return independent reference/adaptive branches from a root seed.
+
+    A caller-supplied ``SeedSequence`` is cloned before spawning: ``spawn``
+    advances the sequence's ``n_children_spawned`` counter, so spawning the
+    original object would make a second call with the same object produce
+    different children. Cloning from ``(entropy, spawn_key, pool_size)`` with a
+    fresh counter keeps replay bit-identical when the same object is reused, and
+    never mutates the caller's object.
+    """
 
     root = seed if isinstance(seed, np.random.SeedSequence) else np.random.SeedSequence(seed)
-    return tuple(root.spawn(2))
+    clone = np.random.SeedSequence(
+        entropy=root.entropy,
+        spawn_key=root.spawn_key,
+        pool_size=root.pool_size,
+    )
+    return tuple(clone.spawn(2))
 
 
 def reference_seed(seed: int | np.random.SeedSequence) -> np.random.SeedSequence:

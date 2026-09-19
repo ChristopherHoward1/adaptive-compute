@@ -25,6 +25,22 @@ def test_delta_draws_are_bit_identical_for_same_params_and_seed() -> None:
     assert np.array_equal(first.deltas, second.deltas)
 
 
+def test_delta_draws_replay_when_reusing_the_same_seedsequence_object() -> None:
+    # spawn() advances a SeedSequence's child counter; reusing the same object
+    # must still replay bit-identically (seed_branches clones before spawning).
+    params, _generator = BATTERY["small_effect"]
+    scores_a, scores_b, y = generate(params)
+    ss = np.random.SeedSequence(1234)
+
+    first = paired_bootstrap_deltas(scores_a, scores_b, y, draws=60, seed=ss)
+    second = paired_bootstrap_deltas(scores_a, scores_b, y, draws=60, seed=ss)
+
+    assert np.array_equal(first.deltas, second.deltas)
+    # and equal to the int-seed stream, since SeedSequence(1234) ~ int 1234
+    from_int = paired_bootstrap_deltas(scores_a, scores_b, y, draws=60, seed=1234)
+    assert np.array_equal(first.deltas, from_int.deltas)
+
+
 def test_reference_and_future_adaptive_branches_are_distinct() -> None:
     params, _generator = BATTERY["small_effect"]
     scores_a, scores_b, y = generate(params)
