@@ -67,6 +67,19 @@ def test_eval_check_fails_when_recovery_is_perturbed(monkeypatch) -> None:  # ty
         assert eval_module.main(["--check"]) == 1
 
 
+def test_eval_check_fails_cleanly_when_reference_raises(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    def unresolved_reference(*args, **kwargs):  # type: ignore[no-untyped-def]
+        del args, kwargs
+        raise eval_module.UnresolvedReferenceError("straddled at B_ref")
+
+    monkeypatch.setattr(eval_module, "fixed_budget_reference", unresolved_reference)
+
+    stderr = io.StringIO()
+    with contextlib.redirect_stderr(stderr):
+        assert eval_module.main(["--check"]) == 1
+    assert "did not resolve" in stderr.getvalue()
+
+
 def test_eval_check_fails_when_sizing_mcse_overflows(monkeypatch) -> None:  # type: ignore[no-untyped-def]
     original = eval_module.paired_bootstrap_deltas
 

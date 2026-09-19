@@ -13,6 +13,7 @@ from adaptive_compute.metrics import delta
 from adaptive_compute.reference import (
     DEFAULT_B_REF,
     DEFAULT_DELTA,
+    UnresolvedReferenceError,
     decision_from_delta,
     fixed_budget_reference,
 )
@@ -46,20 +47,31 @@ def _check() -> int:
             print(f"determinism failed for {name}", file=sys.stderr)
             return 1
 
-        total_draws += first.draws_consumed
+        # Count every resample consumed, including the replay run, so the
+        # printed total is the exact draw count spent by the check.
+        total_draws += first.draws_consumed + second.draws_consumed
         # Classify from the plug-in delta before invoking the fixed-budget
         # reference; boundary members are deliberately outside recovery scoring.
         stratum = classify_delta(plugin_delta, DEFAULT_DELTA)
         if stratum == "boundary":
             continue
 
-        result = fixed_budget_reference(
-            scores_a,
-            scores_b,
-            y,
-            b_ref=DEFAULT_B_REF,
-            seed=branch_seed,
-        )
+        try:
+            result = fixed_budget_reference(
+                scores_a,
+                scores_b,
+                y,
+                b_ref=DEFAULT_B_REF,
+                seed=branch_seed,
+            )
+        except UnresolvedReferenceError:
+            # A non-boundary member should always resolve at B_ref; if one ever
+            # straddles, fail the check cleanly instead of aborting on a traceback.
+            print(
+                f"reference did not resolve for non-boundary member {name}",
+                file=sys.stderr,
+            )
+            return 1
         expected = decision_from_delta(plugin_delta, DEFAULT_DELTA)
         if result.decision != expected:
             print(
