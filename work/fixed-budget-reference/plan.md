@@ -1,6 +1,6 @@
 # Fixed-budget reference bootstrap decision procedure
 
-**Slug:** fixed-budget-reference · **Date:** 2026-09-19 · **Status:** approved
+**Slug:** fixed-budget-reference · **Date:** 2026-09-19 · **Status:** implemented
 
 ## Goal
 
@@ -133,8 +133,9 @@ Files to modify:
   reference and the fixed synthetic regime now concretely exist). **EVAL_METRIC
   stays PROVISIONAL** — the decision-agreement/false-stop metric is undefined until
   the adaptive method exists. (Layout section: note the new modules.)
-- `PLAN.md` — Now/Next: mark this unit shipped-pending, set Next to the **adaptive
-  procedure (§3)**.
+- `PLAN.md` — Orchestrator-owned (not modified by the implementer): Now/Next
+  updated to mark this unit implementing and set Next to the **adaptive procedure
+  (§3)**. Done at approval time, outside the worktree diff.
 
 Files NOT to touch:
 - `scripts/gate.sh`, `scripts/release.sh`, `config.yaml` — harness machinery. The
@@ -144,40 +145,40 @@ Files NOT to touch:
 
 ## Acceptance criteria
 
-- [ ] `python -c "import adaptive_compute.reference, adaptive_compute.generators, adaptive_compute.bootstrap, adaptive_compute.metrics, adaptive_compute.strata, adaptive_compute.eval"` succeeds.
-- [ ] **AUC correctness:** `test_metrics.py` asserts the hand-rolled AUC equals a
+- [x] `python -c "import adaptive_compute.reference, adaptive_compute.generators, adaptive_compute.bootstrap, adaptive_compute.metrics, adaptive_compute.strata, adaptive_compute.eval"` succeeds.
+- [x] **AUC correctness:** `test_metrics.py` asserts the hand-rolled AUC equals a
       hard-coded known value on a small fixed fixture (tolerance ≤ 1e-9).
-- [ ] **Determinism:** `test_determinism.py` asserts two runs with the same
+- [x] **Determinism:** `test_determinism.py` asserts two runs with the same
       `(params, seed)` produce a bit-identical array of `Δ` draws
       (`np.array_equal`), and that reference/adaptive spawned streams differ.
-- [ ] **Draw accounting:** a run reporting budget `B_ref` consumed exactly `B_ref`
+- [x] **Draw accounting:** a run reporting budget `B_ref` consumed exactly `B_ref`
       resamples (asserted in `test_bootstrap.py`), and the CLI prints the count.
-- [ ] **Decision instrument named:** `reference.py` reads the decision off a
+- [x] **Decision instrument named:** `reference.py` reads the decision off a
       percentile bootstrap interval at level `1−α`; the reference returns only
       `{A_better, B_better, equivalent}` and has no `abstain` path (asserted: the
       returned decision is never `abstain`).
-- [ ] **Known-decision recovery:** `test_reference.py` asserts the reference
+- [x] **Known-decision recovery:** `test_reference.py` asserts the reference
       returns the decision implied by the **plug-in `Δ(E)`** (sign vs `±δ`) for each
       non-`boundary` battery member at the unit's `B_ref` and seed.
-- [ ] **`B_ref` sizing (genuine):** `test_reference.py` estimates MCSE as the sd of
+- [x] **`B_ref` sizing (genuine):** `test_reference.py` estimates MCSE as the sd of
       the `B_ref` `Δ`-estimate across K independent reference replications and
       asserts `≤ ρ·δ` (ρ=0.1) **on the well-behaved boundary member**; for the
       heavy-tailed and rare-event members it computes the same statistic and prints
       it as a diagnostic (no hard assert). The within-run `sample_sd/√B` estimator
       is explicitly not used.
-- [ ] **Strata from `Δ(E)`:** `test_generators.py` asserts each member's plug-in
+- [x] **Strata from `Δ(E)`:** `test_generators.py` asserts each member's plug-in
       `Δ(E)` lands in the intended stratum, and that a constructed at-boundary case
       (`|Δ(E) ∓ δ| < ρ·δ`) classifies as `boundary`.
-- [ ] **Battery completeness:** all five §6 members present, ≥1 heavy-tailed
+- [x] **Battery completeness:** all five §6 members present, ≥1 heavy-tailed
       (asserted by an inventory test).
-- [ ] **Gate wiring:** `scripts/gate.d/eval.sh` exists, runs
+- [x] **Gate wiring:** `scripts/gate.d/eval.sh` exists, runs
       `python -m adaptive_compute.eval --check`, and completes in < 5 s; `--check`
       exits non-zero if determinism, recovery, or sizing fails (verify by a
       deliberately perturbed seed in a test, not in the committed hook).
-- [ ] `ARCHI.md` EVAL_COMMAND is set to the wired command; GROUND_TRUTH_SOURCE and
+- [x] `ARCHI.md` EVAL_COMMAND is set to the wired command; GROUND_TRUTH_SOURCE and
       DATA_REGIME are resolved; EVAL_METRIC remains PROVISIONAL with a pointer to
       the adaptive unit.
-- [ ] `bash scripts/gate.sh` exits 0 (includes ruff, mypy, pytest, shellcheck over
+- [x] `bash scripts/gate.sh` exits 0 (includes ruff, mypy, pytest, shellcheck over
       the new `eval.sh`, and the new eval hook).
 
 ## Release
@@ -232,3 +233,54 @@ Reviewer affirmed as sound: the §10 scoping (§1–2, §6–9; §3/§4/§5 excl
 gate-wiring mechanism, and consistency with the science docs.
 
 Plan verdict: **REVISE → addressed.** No open items for the Owner.
+
+---
+
+### Code review (/3-review) — six rounds, dual APPROVE
+
+Two independent cold reviewers per round: the `code-reviewer` (stood in as a
+read-only `Plan`-type subagent, as the named agent type is unregistered in this
+build; writer ≠ reviewer preserved) and Codex via `scripts/codex-review.sh`. The
+code-reviewer APPROVED every round; Codex issued REQUEST CHANGES rounds 1–5 and
+APPROVED round 6. Each round fixed distinct, real findings (not churn on one
+issue). Two findings needed Owner arbitration; both are recorded as Decisions
+below. Accepted deferrals: `deferrals.md` D1 (degenerate zero-positive resample)
+and D2 (hard-member MCSE diagnostic uses the raising reference) → both routed to
+the adaptive unit.
+
+- **R1** (Codex REQUEST CHANGES / code-reviewer APPROVE): removed the silent
+  point-estimate fallback (decision read strictly off the percentile interval);
+  added `B_ref` sizing to `--check`; reverted an out-of-scope `-p no:capture`.
+  Deferred the degenerate-resample crash (D1).
+- **R2** (Codex REQUEST CHANGES / code-reviewer APPROVE): straddle-interval
+  semantics → **Owner decision** (see below); widened the `heavy_tailed` margin.
+- **R3** (Codex REQUEST CHANGES / code-reviewer APPROVE): `SeedSequence` branching
+  → **Owner decision** (see below); non-vacuous boundary-routing test; `--check`
+  recovery/sizing failure-path tests.
+- **R4** (Codex REQUEST CHANGES / code-reviewer APPROVE): honest `--check` draw
+  count (count the replay run; now 7040); clean `UnresolvedReferenceError` exit
+  instead of a traceback.
+- **R5** (Codex REQUEST CHANGES / code-reviewer APPROVE): clone the `SeedSequence`
+  before spawning so a reused object replays bit-identically (round-4's hardening
+  had made `spawn` mutate the caller's object). Deferred the hard-member diagnostic
+  consistency issue (D2).
+- **R6**: **Codex APPROVE + code-reviewer APPROVE.** Gate green (pytest 22,
+  `eval --check` draws_consumed=7040, 185 shell-suite checks). Remaining findings
+  all LOW/non-blocking.
+
+**Owner decisions (arbitrated during review):**
+1. *Straddle → loud error (R2).* A fixed-budget reference at a correctly-sized
+   `B_ref` must resolve every non-`boundary` case cleanly; a percentile interval
+   that straddles a ±δ edge is boundary-adjacent or under-sized, so it **raises
+   `UnresolvedReferenceError`** rather than silently returning `equivalent`. The
+   scored pipeline classifies by plug-in `Δ(E)` via strata first, so the raise is
+   unreachable on scored (non-boundary) cases. Decision set `{A_better, B_better,
+   equivalent}` unchanged; no `abstain`.
+2. *Reference resampler always branches (R3).* `paired_bootstrap_deltas` (the
+   reference resampler) **always** routes its seed through `reference_seed`
+   (`spawn` branch [0]) for both `int` and `SeedSequence` inputs, making
+   reference/adaptive stream independence structural; the adaptive branch [1] is
+   reserved for the next unit.
+
+Code-review verdict: APPROVE
+Codex-review verdict: APPROVE
