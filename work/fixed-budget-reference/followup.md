@@ -1,27 +1,29 @@
-You are resuming as the implementer for work/fixed-budget-reference/plan.md, in the SAME worktree on branch wt/fixed-budget-reference. The gate passed, but independent review (round 1) raised findings you must address. Read work/fixed-budget-reference/plan.md and work/fixed-budget-reference/deferrals.md first.
+You are resuming as the implementer for work/fixed-budget-reference/plan.md, in the SAME worktree on branch wt/fixed-budget-reference. Review round 2 raised findings; the Owner has decided the resolution. Read work/fixed-budget-reference/plan.md and work/fixed-budget-reference/deferrals.md first.
 
 Stay inside the plan footprint. Re-run scripts/gate.sh until green, commit, and print an updated summary. If any item cannot be fixed within the plan's scope, STOP and explain rather than working around it.
 
 ## Must fix
 
-**1. (HIGH) `src/adaptive_compute/reference.py` — the reference decision must be read off the percentile interval, not a silent point-estimate fallback.**
-`_decision_from_interval` currently falls back to `decision_from_delta(estimate, margin)` (the point estimate `np.mean(deltas)`) whenever the percentile interval straddles a δ edge. The plan makes the percentile interval load-bearing: the decision is `A_better` iff the interval lies wholly above `+δ`, `B_better` iff wholly below `−δ`, `equivalent` iff wholly within `[−δ, +δ]`. The reference has NO abstain, so the remaining case — the interval straddles a δ edge (neither wholly outside nor wholly inside) — needs an EXPLICIT, documented, plan-consistent rule, not a point-estimate fallback that can report `A_better`/`B_better` from an interval that does not clear δ.
-- Remove the point-estimate fallback from the interval-based path.
-- Define the straddle case explicitly. A defensible, plan-consistent rule: an interval that cannot be placed wholly above `+δ` or wholly below `−δ` has not resolved a directional call, so it resolves to `equivalent` (it fails to exclude the equivalence band). Choose and DOCUMENT the rule in a comment/docstring; it must still return one of `{A_better, B_better, equivalent}` and never abstain.
-- Add a test (in `tests/test_reference.py`) that constructs a case whose percentile interval straddles a δ edge and asserts the documented outcome — so the behavior is pinned, not incidental.
-- Non-boundary known-decision recovery (existing test) MUST still pass unchanged.
+**1. (HIGH — Owner decision) A straddling percentile interval must be a LOUD ERROR, not a silent `equivalent` bucket.**
+Right now `reference._decision_from_interval` maps a straddling interval (one that is neither wholly above `+δ`, nor wholly below `−δ`, nor wholly within `[−δ,+δ]`) to `equivalent`. That is a false-equivalence: the interval extends past `+δ`/`−δ` yet reports equivalent. The Owner's decision: the fixed-budget reference, at a correctly-sized `B_ref`, should resolve every NON-boundary case cleanly; a straddle means the case is boundary-adjacent or `B_ref` is under-sized, and must be surfaced, not bucketed.
 
-**2. (HIGH) `src/adaptive_compute/eval.py` — `--check` must also verify B_ref sizing, per the plan's gate-wiring criterion.**
-`--check` currently verifies bit-for-bit replay and non-boundary recovery, but not sizing. Add a cheap across-independent-replication MCSE check on the well-behaved boundary member ONLY: spawn a small number K of independent `SeedSequence` branches (e.g. K=8), take `np.std(estimate, ddof=1)` of the per-replication B_ref Δ-estimate, and exit non-zero if it exceeds `ρ·δ` (ρ=0.1). Use the SAME genuine estimator as the pytest sizing test (NOT within-run `sd/√B`). Keep `--check` fast (sub-second / well under 5s): boundary member only, modest K. The heavier K=16 pytest assertion stays as-is. After this, `python -m adaptive_compute.eval --check` enforces determinism + recovery + sizing.
+Implement:
+- Keep `Decision = Literal["A_better","B_better","equivalent"]` (still three outcomes, still NO abstain).
+- In the interval read-off: wholly above `+δ` → `A_better`; wholly below `−δ` → `B_better`; wholly within `[−δ,+δ]` → `equivalent`. For the remaining (straddling) case, RAISE a dedicated exception — define `class UnresolvedReferenceError(RuntimeError)` (or similar, in reference.py) — with a message naming the interval bounds and `δ`, e.g. "reference interval [lo, hi] straddles ±δ=… at B_ref=…; case is boundary-adjacent or B_ref under-sized". Do NOT fall back to the point estimate and do NOT return equivalent.
+- The scored pipeline must classify by the plug-in `Δ(E)` via `strata.classify_delta` FIRST and only invoke the reference decision on NON-boundary cases. Ensure `eval._check`'s recovery loop already skips `boundary` members (it does today) so it never triggers the raise on the scored path; keep that ordering explicit.
 
-## Cleanup
+Tests (in tests/test_reference.py):
+- REPLACE the current `test_..._straddling_margin_resolves_to_equivalent` with a test asserting a straddling interval RAISES `UnresolvedReferenceError` (construct bounds that cross a δ edge, e.g. lower < δ < upper).
+- Non-boundary known-decision recovery (existing test) MUST still pass unchanged — those cases resolve cleanly and never raise.
+- Add a test showing a boundary case (`|Δ(E) ∓ δ| < ρ·δ`) is classified `boundary` by strata and is therefore routed away from the reference decision (i.e., the gating that prevents the raise on scored cases).
 
-**3. (LOW) `pyproject.toml` — remove `addopts = "-p no:capture"`.**
-The plan scoped the pyproject change to adding `numpy` and "keep tool config as-is." Disabling pytest output capture repo-wide is wider than declared. Remove it. The MCSE diagnostic `print(...)` in `tests/test_reference.py` can stay — pytest surfaces prints on failure, and the diagnostic is informational; do not disable global capture to show it on pass. Ensure the suite still passes.
+**2. (MEDIUM — code-reviewer) Widen the `heavy_tailed` member's margin so recovery is not razor-thin.**
+At the committed seed, `heavy_tailed`'s percentile interval lower bound is +0.0549 against δ=0.05 — only 0.005 of slack, fragile to any reseed. Adjust the `heavy_tailed` generator effect size and/or `B_ref` so its `B_ref` interval clears its δ boundary with a comfortable margin (target: lower bound ≥ δ + a few × the member's MCSE), WITHOUT removing the heavy-tail mechanism (heavy-tailed per-row score contributions — that is the whole point of the member). Its plug-in `Δ(E)` must remain in a non-boundary stratum and recovery must stay green.
 
 ## Do NOT
 
 - Do not touch `PLAN.md`, `scripts/gate.sh`, `scripts/release.sh`, `config.yaml`, `profiles/`, `.claude/`.
-- Do not address the degenerate zero-positive/zero-negative resample issue — it is DEFERRED to the adaptive unit (see `deferrals.md` D1). Leave `metrics.auc()` / `bootstrap.py` behavior as-is on that point.
+- Do not address the degenerate zero-positive/zero-negative resample issue — DEFERRED to the adaptive unit (deferrals.md D1). Leave `metrics.auc()` / `bootstrap.py` behavior as-is on that point.
+- Do not reintroduce the point-estimate fallback or any `-p no:capture` addopts.
 
-When done: `scripts/gate.sh` green from the repo root, commit on this branch with a clear message, and print what changed.
+When done: `scripts/gate.sh` green from the repo root, commit on this branch with a clear message, and print what changed (name the new exception type and the heavy_tailed params you chose).
