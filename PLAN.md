@@ -19,6 +19,7 @@ Build the **Adaptive Compute** research system through the agentic-coding harnes
 - 2026-09-19 — v0 stopping rule uses an **anytime-valid** band (confidence sequence / Gandy-style bounded-resampling-risk); the naive peeked band is rejected because optional-stopping bias applies at the decision level. Novelty claim narrowed to an *application + empirical* result over Gandy (2009) et al. — `docs/prior-art.md`.
 - 2026-09-19 — **Architecture: one repository** for adaptive validation + adaptive explainability (they share the "grow MC draws under an anytime-valid band until a decision resolves" controller), but the **shared abstraction stays un-scaffolded** until the explainability consumer exists. **Dynamic inference routing is deferred, likely a separate repo** (per-input, streaming, regime-A methodology — not the MC-budget primitive). Revisit if v0/v1 shows the controller genuinely reused. — `docs/research-definition.md` §5, `docs/prior-art.md`.
 - 2026-09-19 — ML declarations EVAL_METRIC / GROUND_TRUTH_SOURCE / DATA_REGIME set PROVISIONAL (not resolved) pending the reference unit; EVAL_COMMAND stays PENDING until code exists.
+- 2026-09-19 — Close-out shape for **spec-only / Orchestrator-authored units**: they produce only one review sentinel, so `scripts/release.sh` (two-sentinel precondition) cannot run — close them via a plain PR to `main`, no CalVer bump. If such units recur, spin a `/1-plan` unit to teach `release.sh` a single-review close-out path. — `work/research-bootstrap/retro.md`.
 
 ## Risks
 
