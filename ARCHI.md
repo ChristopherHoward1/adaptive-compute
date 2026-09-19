@@ -43,9 +43,9 @@ Python 3.12 (`src/` layout) for the research code, plus the agentic-coding harne
 
 ### ML profile declarations
 
-- **EVAL_METRIC** — PENDING. To be defined by the Adaptive Compute research unit (next `/1-plan`).
-- **GROUND_TRUTH_SOURCE** — PENDING (same).
-- **EVAL_COMMAND** — PENDING. Goes in `scripts/gate.d/eval.sh` if cheap per-change, otherwise runs at `/3-review`.
-- **DATA_REGIME** — PENDING.
+- **EVAL_METRIC** — PROVISIONAL (`work/research-bootstrap`, `docs/experiment-design.md` §5). Decision-agreement with the full-budget reference + draws consumed (p50/p90/p99) + false-stop rate stratified by difficulty, held to a uniform tolerance. Will firm up when the reference-experiment unit meets reality.
+- **GROUND_TRUTH_SOURCE** — PROVISIONAL (same unit). The full-budget *same-procedure* bootstrap decision at large `B_ref` — a finite, noisy stand-in for the B→∞ decision, explicitly **not** truth.
+- **EVAL_COMMAND** — PENDING. Wired into `scripts/gate.d/eval.sh` (if cheap) or `/3-review` by the fixed-budget-reference unit, once code exists.
+- **DATA_REGIME** — PROVISIONAL (same unit). Offline; fixed evaluation set; dataset-agnostic synthetic generators (+ at most one small real tabular set). No streaming, no added data.
 - **NOTEBOOK_STRATEGY** — Exploratory-only, single-author under `notebooks/<initials>/`. `nb-clean.sh` enabled (no-op until a notebook is tracked).
 - **REPO_HYGIENE** — `ds-hygiene.sh` enabled with defaults (`DS_DATA_MAX_BYTES=1048576`, `DS_DATA_ALLOW_DIRS=tests/fixtures`, `DS_PATH_SCAN=1`).
