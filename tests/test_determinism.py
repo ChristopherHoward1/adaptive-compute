@@ -1,11 +1,18 @@
 import contextlib
 import io
+from types import SimpleNamespace
 
 import numpy as np
 
 from adaptive_compute import eval as eval_module
-from adaptive_compute.bootstrap import adaptive_seed, paired_bootstrap_deltas, reference_seed
+from adaptive_compute.bootstrap import (
+    BootstrapResult,
+    adaptive_seed,
+    paired_bootstrap_deltas,
+    reference_seed,
+)
 from adaptive_compute.generators import BATTERY, generate
+from adaptive_compute.reference import DEFAULT_B_REF
 
 
 def test_delta_draws_are_bit_identical_for_same_params_and_seed() -> None:
@@ -44,6 +51,38 @@ def test_eval_check_fails_when_replay_is_perturbed(monkeypatch) -> None:  # type
         return result
 
     monkeypatch.setattr(eval_module, "paired_bootstrap_deltas", perturbed)
+
+    with contextlib.redirect_stderr(io.StringIO()):
+        assert eval_module.main(["--check"]) == 1
+
+
+def test_eval_check_fails_when_recovery_is_perturbed(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    def wrong_reference(*args, **kwargs):  # type: ignore[no-untyped-def]
+        del args, kwargs
+        return SimpleNamespace(decision="B_better", draws_consumed=DEFAULT_B_REF)
+
+    monkeypatch.setattr(eval_module, "fixed_budget_reference", wrong_reference)
+
+    with contextlib.redirect_stderr(io.StringIO()):
+        assert eval_module.main(["--check"]) == 1
+
+
+def test_eval_check_fails_when_sizing_mcse_overflows(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    original = eval_module.paired_bootstrap_deltas
+
+    def high_variance_sizing(*args, **kwargs):  # type: ignore[no-untyped-def]
+        seed = kwargs["seed"]
+        draws = kwargs["draws"]
+        if isinstance(seed, np.random.SeedSequence):
+            offset = 0.0 if seed.spawn_key[-1] % 2 == 0 else eval_module.DEFAULT_DELTA
+            return BootstrapResult(
+                deltas=np.full(draws, offset, dtype=np.float64),
+                draws_consumed=draws,
+                seed_spawn_key=tuple(seed.spawn_key),
+            )
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(eval_module, "paired_bootstrap_deltas", high_variance_sizing)
 
     with contextlib.redirect_stderr(io.StringIO()):
         assert eval_module.main(["--check"]) == 1

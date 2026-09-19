@@ -41,15 +41,13 @@ def test_reference_interval_straddling_margin_raises_unresolved(
 
 
 def test_boundary_stratum_routes_away_from_reference_decision() -> None:
-    plugin_delta = DEFAULT_DELTA * 1.05
-    reference_was_called = False
-
+    params, _generator = BATTERY["near_delta_boundary"]
+    scores_a, scores_b, y = generate(params)
+    plugin_delta = delta(scores_a, scores_b, y)
     assert classify_delta(plugin_delta, DEFAULT_DELTA) == "boundary"
 
-    if classify_delta(plugin_delta, DEFAULT_DELTA) != "boundary":
-        reference_was_called = True
-
-    assert not reference_was_called
+    with pytest.raises(UnresolvedReferenceError, match=r"straddles ±δ=0\.05"):
+        fixed_budget_reference(scores_a, scores_b, y, seed=90_000 + params.seed)
 
 
 def test_reference_recovers_plugin_decision_for_non_boundary_members() -> None:

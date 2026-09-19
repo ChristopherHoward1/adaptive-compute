@@ -60,7 +60,7 @@ def paired_bootstrap_deltas(
         msg = "scores_a, scores_b, and y must have the same shape"
         raise ValueError(msg)
 
-    seed_sequence = seed if isinstance(seed, np.random.SeedSequence) else reference_seed(seed)
+    seed_sequence = reference_seed(seed)
     rng = np.random.default_rng(seed_sequence)
     values = np.empty(draws, dtype=np.float64)
     n = y_array.size
