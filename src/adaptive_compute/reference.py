@@ -38,7 +38,6 @@ def decision_from_delta(delta: float, margin: float) -> Decision:
 def _decision_from_interval(
     lower: float,
     upper: float,
-    estimate: float,
     margin: float,
 ) -> Decision:
     if lower > margin:
@@ -47,7 +46,11 @@ def _decision_from_interval(
         return "B_better"
     if lower >= -margin and upper <= margin:
         return "equivalent"
-    return decision_from_delta(estimate, margin)
+
+    # The fixed-budget reference has no abstain path. If the percentile interval
+    # straddles a margin edge, it has not resolved a directional call, so it
+    # fails to exclude the equivalence band and resolves to equivalent.
+    return "equivalent"
 
 
 def fixed_budget_reference(
@@ -85,7 +88,7 @@ def fixed_budget_reference(
     )
     estimate = float(np.mean(bootstrap.deltas))
     return ReferenceResult(
-        decision=_decision_from_interval(float(lower), float(upper), estimate, margin),
+        decision=_decision_from_interval(float(lower), float(upper), margin),
         estimate=estimate,
         interval=(float(lower), float(upper)),
         interval_method="percentile",

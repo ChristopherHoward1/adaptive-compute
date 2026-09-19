@@ -22,7 +22,6 @@ select = ["E", "F", "I"]  # pycodestyle errors, pyflakes, import sorting
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
-addopts = "-p no:capture"
 
 [tool.mypy]
 python_version = "3.12"

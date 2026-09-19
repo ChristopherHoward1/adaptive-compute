@@ -18,6 +18,9 @@ from adaptive_compute.reference import (
 )
 from adaptive_compute.strata import classify_delta
 
+CHECK_MCSE_REPLICATIONS = 8
+CHECK_MCSE_RHO = 0.1
+
 
 def _check() -> int:
     total_draws = 0
@@ -62,6 +65,24 @@ def _check() -> int:
                 )
                 return 1
             total_draws += result.draws_consumed
+
+    params, _generator = BATTERY["near_delta_boundary"]
+    scores_a, scores_b, y = generate(params)
+    root = np.random.SeedSequence(20260919)
+    estimates = []
+    for seed_sequence in root.spawn(CHECK_MCSE_REPLICATIONS):
+        result = fixed_budget_reference(scores_a, scores_b, y, seed=seed_sequence)
+        estimates.append(result.estimate)
+        total_draws += result.draws_consumed
+
+    mcse = float(np.std(estimates, ddof=1))
+    if mcse > CHECK_MCSE_RHO * DEFAULT_DELTA:
+        print(
+            f"B_ref sizing failed for near_delta_boundary: "
+            f"MCSE {mcse:.6f} > {CHECK_MCSE_RHO * DEFAULT_DELTA:.6f}",
+            file=sys.stderr,
+        )
+        return 1
 
     print(f"eval check passed; draws_consumed={total_draws}")
     return 0

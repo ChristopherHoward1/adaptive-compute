@@ -1,5 +1,8 @@
 import numpy as np
+import pytest
 
+from adaptive_compute import reference as reference_module
+from adaptive_compute.bootstrap import BootstrapResult
 from adaptive_compute.generators import BATTERY, generate
 from adaptive_compute.metrics import delta
 from adaptive_compute.reference import (
@@ -9,6 +12,34 @@ from adaptive_compute.reference import (
     fixed_budget_reference,
 )
 from adaptive_compute.strata import classify_delta
+
+
+def test_reference_interval_straddling_margin_resolves_to_equivalent(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def straddling_bootstrap(*args: object, **kwargs: object) -> BootstrapResult:
+        del args, kwargs
+        return BootstrapResult(
+            deltas=np.array([0.049, 0.051, 0.20], dtype=np.float64),
+            draws_consumed=3,
+            seed_spawn_key=(),
+        )
+
+    monkeypatch.setattr(reference_module, "paired_bootstrap_deltas", straddling_bootstrap)
+
+    result = fixed_budget_reference(
+        [0.0, 1.0],
+        [0.0, 1.0],
+        [0, 1],
+        margin=DEFAULT_DELTA,
+        alpha=1.0 / 3.0,
+        b_ref=3,
+        seed=123,
+    )
+
+    assert result.interval[0] < DEFAULT_DELTA < result.interval[1]
+    assert result.estimate > DEFAULT_DELTA
+    assert result.decision == "equivalent"
 
 
 def test_reference_recovers_plugin_decision_for_non_boundary_members() -> None:
