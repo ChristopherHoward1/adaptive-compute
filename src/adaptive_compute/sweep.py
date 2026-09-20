@@ -24,10 +24,11 @@ class FixedBResult:
 
 @dataclass(frozen=True)
 class ParetoResult:
-    dominated_fixed_b: tuple[int, ...]
+    adaptive_dominated_fixed_b: tuple[int, ...]
+    fixed_b_dominating_adaptive: tuple[int, ...]
     best_savings_ratio: float
     adaptive_median_draws: float
-    fixed_best_median_draws: float | None
+    adaptive_best_fixed_b: int | None
 
 
 def decision_from_interval(
@@ -101,23 +102,44 @@ def false_stop_rate(
 def pareto_verdict(
     *,
     adaptive_false_stop_rate: float,
+    adaptive_nondecision_rate: float,
     adaptive_draws: tuple[int, ...],
     fixed_false_stop_rates: dict[int, float],
+    fixed_nondecision_rates: dict[int, float],
+    target_savings: float = 2.0,
 ) -> ParetoResult:
     if not adaptive_draws:
         msg = "adaptive_draws must be non-empty"
         raise ValueError(msg)
     adaptive_median = float(np.median(adaptive_draws))
-    dominated = tuple(
+    for b in fixed_false_stop_rates:
+        if b not in fixed_nondecision_rates:
+            msg = f"missing fixed nondecision rate for B={b}"
+            raise ValueError(msg)
+
+    adaptive_dominated = tuple(
         b
         for b, fixed_rate in sorted(fixed_false_stop_rates.items())
-        if b < adaptive_median and fixed_rate <= adaptive_false_stop_rate
+        if adaptive_median < b
+        and b / adaptive_median >= target_savings
+        and adaptive_false_stop_rate <= fixed_rate
+        and adaptive_nondecision_rate <= fixed_nondecision_rates[b]
     )
-    best_fixed = min(dominated) if dominated else None
-    savings = float(best_fixed / adaptive_median) if best_fixed is not None else 0.0
+    fixed_dominating = tuple(
+        b
+        for b, fixed_rate in sorted(fixed_false_stop_rates.items())
+        if b < adaptive_median
+        and fixed_rate <= adaptive_false_stop_rate
+        and fixed_nondecision_rates[b] <= adaptive_nondecision_rate
+    )
+    best_ratio = max((b / adaptive_median for b in adaptive_dominated), default=0.0)
+    best_fixed = (
+        max(adaptive_dominated, key=lambda b: b / adaptive_median) if adaptive_dominated else None
+    )
     return ParetoResult(
-        dominated_fixed_b=dominated,
-        best_savings_ratio=savings,
+        adaptive_dominated_fixed_b=adaptive_dominated,
+        fixed_b_dominating_adaptive=fixed_dominating,
+        best_savings_ratio=float(best_ratio),
         adaptive_median_draws=adaptive_median,
-        fixed_best_median_draws=float(best_fixed) if best_fixed is not None else None,
+        adaptive_best_fixed_b=best_fixed,
     )

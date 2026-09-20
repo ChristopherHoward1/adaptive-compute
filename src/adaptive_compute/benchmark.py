@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Mapping
 from dataclasses import asdict, dataclass, replace
 from pathlib import Path
 from statistics import NormalDist
@@ -17,19 +18,19 @@ from adaptive_compute.reference import (
     DEFAULT_B_REF,
     DEFAULT_DELTA,
     Decision,
-    ReferenceResult,
     UnresolvedReferenceError,
     fixed_budget_reference,
 )
 from adaptive_compute.strata import classify_delta
-from adaptive_compute.sweep import decision_from_interval, pareto_verdict
+from adaptive_compute.sweep import fixed_b_sweep, pareto_verdict
 
 DEFAULT_BATCH = 32
-DEFAULT_B_MAX = 320
+DEFAULT_B_MAX = 2048
 DEFAULT_N_TUNE = 24
 DEFAULT_N_TEST = 500
 TEST_SEED_OFFSET = 10_000
 FIXED_B_GRID = (32, 64, 128, DEFAULT_B_REF)
+TARGET_SAVINGS_RATIO = 2.0
 RESULTS_MD = Path("work/adaptive-procedure/results.md")
 RESULTS_JSON = Path("work/adaptive-procedure/results.json")
 
@@ -50,7 +51,7 @@ class MemberRun:
     adaptive_decision: str
     adaptive_draws: int
     reference_unresolved: bool
-    fixed_decisions: dict[int, str]
+    fixed_decisions: Mapping[int, str]
 
 
 @dataclass(frozen=True)
@@ -65,7 +66,9 @@ class StratumSummary:
     draws_p99: float
     abstain_rate: float
     reference_unresolved: int
-    pareto_dominated_fixed_b: tuple[int, ...]
+    fixed_b_unresolved_rates: dict[int, float]
+    adaptive_dominated_fixed_b: tuple[int, ...]
+    fixed_b_dominating_adaptive: tuple[int, ...]
     pareto_best_savings_ratio: float
 
 
@@ -95,19 +98,6 @@ def _seeded_params(params: GeneratorParams, seed_index: int) -> GeneratorParams:
     return replace(params, seed=params.seed + seed_index)
 
 
-def _fixed_decisions_from_reference(reference: ReferenceResult | None) -> dict[int, str]:
-    if reference is None:
-        return {b: "unresolved" for b in FIXED_B_GRID}
-    decisions: dict[int, str] = {}
-    for b in FIXED_B_GRID:
-        lower, upper = np.percentile(
-            reference.deltas[:b],
-            [100.0 * DEFAULT_ALPHA / 2.0, 100.0 * (1.0 - DEFAULT_ALPHA / 2.0)],
-        )
-        decisions[b] = decision_from_interval(float(lower), float(upper), margin=DEFAULT_DELTA)
-    return decisions
-
-
 def _run_member_seed(
     name: str,
     params: GeneratorParams,
@@ -120,7 +110,7 @@ def _run_member_seed(
     stratum = classify_delta(plugin_delta, DEFAULT_DELTA)
     run_seed = 90_000 + seeded.seed
 
-    reference: ReferenceResult | None
+    reference = None
     reference_decision: Decision | None
     reference_unresolved = False
     try:
@@ -147,6 +137,19 @@ def _run_member_seed(
         b_max=adaptive_params.b_max,
         seed=run_seed,
     )
+    fixed_seed = 180_000 + seeded.seed
+    fixed_decisions = {
+        result.b: result.decision
+        for result in fixed_b_sweep(
+            scores_a,
+            scores_b,
+            y,
+            grid=FIXED_B_GRID,
+            margin=DEFAULT_DELTA,
+            alpha=DEFAULT_ALPHA,
+            seed=fixed_seed,
+        )
+    }
     return MemberRun(
         member=name,
         stratum=stratum,
@@ -155,17 +158,17 @@ def _run_member_seed(
         adaptive_decision=adaptive.decision,
         adaptive_draws=adaptive.draws_consumed,
         reference_unresolved=reference_unresolved,
-        fixed_decisions=_fixed_decisions_from_reference(reference),
+        fixed_decisions=fixed_decisions,
     )
 
 
 def _tune_params(n_tune: int) -> AdaptiveParams:
     candidates = (
-        AdaptiveParams(b=DEFAULT_BATCH, alpha=DEFAULT_ALPHA, b_max=DEFAULT_B_MAX),
-        AdaptiveParams(b=64, alpha=DEFAULT_ALPHA, b_max=DEFAULT_B_MAX),
+        AdaptiveParams(b=DEFAULT_BATCH, alpha=DEFAULT_ALPHA, b_max=1024),
+        AdaptiveParams(b=64, alpha=DEFAULT_ALPHA, b_max=2048),
     )
     best = candidates[0]
-    best_score = (1.0, float(DEFAULT_B_MAX))
+    best_score = (1.0, 1.0, float(DEFAULT_B_MAX))
     for candidate in candidates:
         runs = [
             _run_member_seed(name, params, candidate, i)
@@ -174,21 +177,34 @@ def _tune_params(n_tune: int) -> AdaptiveParams:
             for i in range(n_tune)
         ]
         scored = [run for run in runs if run.reference_decision is not None]
-        false_rate = float(
-            np.mean(
-                [
-                    run.adaptive_decision != "abstain"
-                    and run.adaptive_decision != run.reference_decision
-                    for run in scored
-                ]
-            )
-        )
+        false_rate = _false_stop_rate(scored)
+        abstain_rate = _adaptive_abstain_rate(scored)
         median_draws = float(np.median([run.adaptive_draws for run in scored]))
-        score = (false_rate, median_draws)
+        score = (false_rate, abstain_rate, median_draws)
         if score < best_score:
             best = candidate
             best_score = score
     return best
+
+
+def _false_stop_rate(runs: list[MemberRun]) -> float:
+    if not runs:
+        return 0.0
+    return float(
+        np.mean(
+            [
+                run.adaptive_decision != "abstain"
+                and run.adaptive_decision != run.reference_decision
+                for run in runs
+            ]
+        )
+    )
+
+
+def _adaptive_abstain_rate(runs: list[MemberRun]) -> float:
+    if not runs:
+        return 0.0
+    return float(np.mean([run.adaptive_decision == "abstain" for run in runs]))
 
 
 def _summarize_stratum(stratum: str, runs: list[MemberRun]) -> StratumSummary:
@@ -200,6 +216,7 @@ def _summarize_stratum(stratum: str, runs: list[MemberRun]) -> StratumSummary:
     rate = false_stops / len(scored) if scored else 0.0
     draws = [run.adaptive_draws for run in runs]
     fixed_rates = {}
+    fixed_unresolved_rates = {}
     for b in FIXED_B_GRID:
         fixed_rates[b] = (
             sum(
@@ -211,10 +228,19 @@ def _summarize_stratum(stratum: str, runs: list[MemberRun]) -> StratumSummary:
             if scored
             else 0.0
         )
+        fixed_unresolved_rates[b] = (
+            sum(run.fixed_decisions[b] == "unresolved" for run in scored) / len(scored)
+            if scored
+            else 0.0
+        )
+    abstain_rate = _adaptive_abstain_rate(scored)
     pareto = pareto_verdict(
         adaptive_false_stop_rate=rate,
+        adaptive_nondecision_rate=abstain_rate,
         adaptive_draws=tuple(run.adaptive_draws for run in scored),
         fixed_false_stop_rates=fixed_rates,
+        fixed_nondecision_rates=fixed_unresolved_rates,
+        target_savings=TARGET_SAVINGS_RATIO,
     )
     return StratumSummary(
         stratum=stratum,
@@ -225,9 +251,11 @@ def _summarize_stratum(stratum: str, runs: list[MemberRun]) -> StratumSummary:
         draws_p50=float(np.percentile(draws, 50)),
         draws_p90=float(np.percentile(draws, 90)),
         draws_p99=float(np.percentile(draws, 99)),
-        abstain_rate=float(np.mean([run.adaptive_decision == "abstain" for run in runs])),
+        abstain_rate=abstain_rate,
         reference_unresolved=sum(run.reference_unresolved for run in runs),
-        pareto_dominated_fixed_b=pareto.dominated_fixed_b,
+        fixed_b_unresolved_rates=fixed_unresolved_rates,
+        adaptive_dominated_fixed_b=pareto.adaptive_dominated_fixed_b,
+        fixed_b_dominating_adaptive=pareto.fixed_b_dominating_adaptive,
         pareto_best_savings_ratio=pareto.best_savings_ratio,
     )
 
@@ -267,7 +295,9 @@ def run_benchmark(
             )
         )
     h1_holds = all(
-        summary.false_stop_ci[1] <= DEFAULT_ALPHA and not summary.pareto_dominated_fixed_b
+        summary.false_stop_ci[1] <= DEFAULT_ALPHA
+        and not summary.fixed_b_dominating_adaptive
+        and summary.pareto_best_savings_ratio >= TARGET_SAVINGS_RATIO
         for summary in summaries
     )
     return BenchmarkResult(
@@ -296,18 +326,25 @@ def _summary_markdown(result: BenchmarkResult) -> str:
         "",
         (
             "| stratum | scored | false-stop rate | 95% CI | draws p50/p90/p99 "
-            "| abstain | ref unresolved | fixed-B dominating adaptive |"
+            "| abstain | ref unresolved | fixed-B unresolved | adaptive dominates fixed-B | "
+            "fixed-B dominates adaptive | best savings |"
         ),
-        "| --- | ---: | ---: | --- | --- | ---: | ---: | --- |",
+        "| --- | ---: | ---: | --- | --- | ---: | ---: | --- | --- | --- | ---: |",
     ]
     for summary in result.summaries:
         ci = f"[{summary.false_stop_ci[0]:.4f}, {summary.false_stop_ci[1]:.4f}]"
         draws = f"{summary.draws_p50:.0f}/{summary.draws_p90:.0f}/{summary.draws_p99:.0f}"
-        dominated = ", ".join(str(b) for b in summary.pareto_dominated_fixed_b) or "none"
+        fixed_unresolved = ", ".join(
+            f"{b}:{rate:.3f}" for b, rate in sorted(summary.fixed_b_unresolved_rates.items())
+        )
+        adaptive_dominates = ", ".join(str(b) for b in summary.adaptive_dominated_fixed_b) or "none"
+        fixed_dominates = ", ".join(str(b) for b in summary.fixed_b_dominating_adaptive) or "none"
         lines.append(
             f"| {summary.stratum} | {summary.scored} | {summary.false_stop_rate:.4f} "
             f"| {ci} | {draws} | {summary.abstain_rate:.4f} "
-            f"| {summary.reference_unresolved} | {dominated} |"
+            f"| {summary.reference_unresolved} | {fixed_unresolved} | "
+            f"{adaptive_dominates} | {fixed_dominates} | "
+            f"{summary.pareto_best_savings_ratio:.2f}x |"
         )
     heavy = result.heavy_tailed_false_stop_rate
     lines.extend(
@@ -320,14 +357,15 @@ def _summary_markdown(result: BenchmarkResult) -> str:
             "## Pareto Savings",
             "",
             (
-                "A fixed-B entry listed in the table has lower median draws and false-stop "
-                "rate no higher than adaptive in that stratum; `none` means no fixed-B grid "
-                "point dominated the adaptive run."
+                "Fixed-B decisions use an independent bootstrap stream from adaptive. "
+                "Unresolved fixed-B intervals and adaptive abstentions are accounted for "
+                "symmetrically in the Pareto comparison."
             ),
             "",
             (
-                "H1 requires both the per-stratum false-stop CI check and no fixed-B "
-                "dominator; a listed fixed-B dominator makes this a negative result."
+                f"H1 requires the per-stratum false-stop CI check, no fixed-B dominator, "
+                f"and at least {TARGET_SAVINGS_RATIO:.0f}x median-draw savings from an "
+                "adaptive-dominated fixed-B in every non-boundary stratum."
             ),
         ]
     )

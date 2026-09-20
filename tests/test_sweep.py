@@ -5,22 +5,38 @@ from adaptive_compute.sweep import false_stop_rate, fixed_b_sweep, pareto_verdic
 def test_pareto_verdict_finds_fixed_b_that_dominates_adaptive() -> None:
     result = pareto_verdict(
         adaptive_false_stop_rate=0.02,
+        adaptive_nondecision_rate=0.10,
         adaptive_draws=(100, 120, 140),
         fixed_false_stop_rates={64: 0.01, 128: 0.03, 256: 0.0},
+        fixed_nondecision_rates={64: 0.05, 128: 0.00, 256: 0.30},
     )
 
-    assert result.dominated_fixed_b == (64,)
-    assert result.fixed_best_median_draws == 64.0
+    assert result.fixed_b_dominating_adaptive == (64,)
 
 
-def test_pareto_verdict_reports_no_dominator() -> None:
+def test_pareto_verdict_reports_adaptive_target_savings() -> None:
     result = pareto_verdict(
         adaptive_false_stop_rate=0.02,
-        adaptive_draws=(100, 120, 140),
-        fixed_false_stop_rates={64: 0.03, 128: 0.01},
+        adaptive_nondecision_rate=0.05,
+        adaptive_draws=(100, 100, 100),
+        fixed_false_stop_rates={128: 0.02, 256: 0.03, 320: 0.01},
+        fixed_nondecision_rates={128: 0.05, 256: 0.05, 320: 0.01},
     )
 
-    assert result.dominated_fixed_b == ()
+    assert result.adaptive_dominated_fixed_b == (256,)
+    assert result.best_savings_ratio == 2.56
+
+
+def test_pareto_verdict_does_not_credit_unresolved_fixed_b_as_cheap_win() -> None:
+    result = pareto_verdict(
+        adaptive_false_stop_rate=0.02,
+        adaptive_nondecision_rate=0.10,
+        adaptive_draws=(100, 120, 140),
+        fixed_false_stop_rates={64: 0.00},
+        fixed_nondecision_rates={64: 0.95},
+    )
+
+    assert result.fixed_b_dominating_adaptive == ()
     assert result.best_savings_ratio == 0.0
 
 

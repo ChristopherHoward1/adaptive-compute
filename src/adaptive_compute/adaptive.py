@@ -10,6 +10,7 @@ nonparametric, nonasymptotic confidence sequences."
 from __future__ import annotations
 
 from dataclasses import dataclass
+from math import ceil
 from typing import Literal
 
 import numpy as np
@@ -32,8 +33,9 @@ def empirical_bernstein_bounds(
     values: ArrayLike,
     *,
     alpha: float,
+    max_looks: int = 1,
 ) -> tuple[float, float]:
-    """Return a conservative anytime-valid CS for a mean in [-1, 1]."""
+    """Return a finite-horizon empirical-Bernstein CS for a mean in [-1, 1]."""
 
     samples = np.asarray(values, dtype=np.float64)
     if samples.ndim != 1 or samples.size == 0:
@@ -42,6 +44,9 @@ def empirical_bernstein_bounds(
     if not 0.0 < alpha < 1.0:
         msg = "alpha must be between 0 and 1"
         raise ValueError(msg)
+    if max_looks <= 0:
+        msg = "max_looks must be positive"
+        raise ValueError(msg)
     if np.any(samples < -1.0) or np.any(samples > 1.0):
         msg = "values must lie in [-1, 1]"
         raise ValueError(msg)
@@ -49,9 +54,10 @@ def empirical_bernstein_bounds(
     n = samples.size
     mean = float(np.mean(samples))
     variance = float(np.var(samples, ddof=1)) if n > 1 else 0.25
-    loglog = np.log2(max(2, n))
-    log_term = float(np.log((3.0 * loglog * loglog) / alpha))
-    radius = float(np.sqrt((2.0 * variance * log_term) / n) + (14.0 * log_term) / (3.0 * n))
+    log_term = float(np.log((2.0 * max_looks) / alpha))
+    radius = float(
+        np.sqrt((2.0 * variance * log_term) / n) + (14.0 * log_term) / (3.0 * max(1, n - 1))
+    )
     return max(-1.0, mean - radius), min(1.0, mean + radius)
 
 
@@ -108,6 +114,7 @@ def adaptive_decision(
     draws = 0
     batches = 0
     bounds = (-1.0, 1.0)
+    max_looks = ceil(b_max / b)
 
     while draws < b_max:
         batch = next(stream)
@@ -117,9 +124,9 @@ def adaptive_decision(
         values[draws : draws + current] = batch_values[:current]
         draws += current
         batches += 1
-        bounds = empirical_bernstein_bounds(values[:draws], alpha=alpha)
+        bounds = empirical_bernstein_bounds(values[:draws], alpha=alpha, max_looks=max_looks)
         decision = decision_from_bounds(bounds[0], bounds[1], margin=margin)
-        if decision is not None and draws < b_max:
+        if decision is not None:
             return AdaptiveResult(
                 decision=decision,
                 draws_consumed=draws,

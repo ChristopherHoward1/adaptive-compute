@@ -112,6 +112,22 @@ def test_draw_accounting_resolved_and_abstain_cases() -> None:
     assert abstain.draws_consumed == 20
 
 
+def test_terminal_batch_resolution_is_returned() -> None:
+    result = adaptive_decision(
+        np.zeros(400),
+        np.zeros(400),
+        np.array([0, 1] * 200),
+        margin=DEFAULT_DELTA,
+        alpha=0.05,
+        b=400,
+        b_max=400,
+        seed=123,
+    )
+
+    assert result.decision == "equivalent"
+    assert result.draws_consumed == 400
+
+
 def test_stop_decision_uses_bounds_only() -> None:
     assert decision_from_bounds(0.051, 0.20, margin=DEFAULT_DELTA) == "A_better"
     assert decision_from_bounds(-0.20, -0.051, margin=DEFAULT_DELTA) == "B_better"

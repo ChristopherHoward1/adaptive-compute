@@ -12,8 +12,12 @@ is based on a confidence sequence intended to remain valid under optional
 stopping, not on a freshly peeked fixed-time interval.
 
 Reference: Howard et al. (2021), "Time-uniform, nonparametric, nonasymptotic
-confidence sequences." The implementation uses a conservative empirical-Bernstein
-boundary for bounded observations and clips the resulting interval to `[-1, 1]`.
+confidence sequences." The implementation uses a finite-horizon
+empirical-Bernstein boundary for bounded observations, with a union-bound
+allocation over the configured batch looks, and clips the resulting interval to
+`[-1, 1]`. `B_max` is selected on the tune split from candidates large enough for
+this boundary to resolve non-boundary low-variance cases; the held-out test split
+then reports the honest result without retuning.
 
 ## Why the mean is the estimand
 

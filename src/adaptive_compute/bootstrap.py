@@ -8,8 +8,6 @@ from dataclasses import dataclass
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
 
-from adaptive_compute.metrics import delta
-
 
 @dataclass(frozen=True)
 class BootstrapResult:
@@ -77,21 +75,42 @@ def _resample_deltas(
 ) -> NDArray[np.float64]:
     values = np.empty(draws, dtype=np.float64)
     n = y.size
+    pos_mask = y == 1
+    neg_mask = ~pos_mask
+    pos_count = int(np.sum(pos_mask))
+    neg_count = int(np.sum(neg_mask))
+    if pos_count == 0 or neg_count == 0:
+        values.fill(0.0)
+        return values
+
+    def pair_kernel(scores: NDArray[np.float64]) -> NDArray[np.float64]:
+        pos_scores = scores[pos_mask]
+        neg_scores = scores[neg_mask]
+        return (pos_scores[:, None] > neg_scores[None, :]).astype(np.float64) + (
+            0.5 * (pos_scores[:, None] == neg_scores[None, :])
+        )
+
+    pair_delta = pair_kernel(scores_a) - pair_kernel(scores_b)
 
     written = 0
     while written < draws:
         current = min(batch_size, draws - written)
         indices = rng.integers(0, n, size=(current, n), endpoint=False)
-        for offset, sample_indices in enumerate(indices):
-            sample_y = y[sample_indices]
-            if np.all(sample_y == sample_y[0]):
-                values[written + offset] = 0.0
-                continue
-            values[written + offset] = delta(
-                scores_a[sample_indices],
-                scores_b[sample_indices],
-                sample_y,
-            )
+        counts = np.zeros((current, n), dtype=np.float64)
+        np.add.at(counts, (np.arange(current)[:, None], indices), 1.0)
+        pos_weights = counts[:, pos_mask]
+        neg_weights = counts[:, neg_mask]
+        pos_totals = np.sum(pos_weights, axis=1)
+        neg_totals = np.sum(neg_weights, axis=1)
+        denominators = pos_totals * neg_totals
+        numerators = np.einsum("bp,pn,bn->b", pos_weights, pair_delta, neg_weights)
+        batch_values = np.divide(
+            numerators,
+            denominators,
+            out=np.zeros(current, dtype=np.float64),
+            where=denominators > 0.0,
+        )
+        values[written : written + current] = batch_values
         written += current
     return values
 
