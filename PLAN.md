@@ -8,9 +8,9 @@ Build the **Adaptive Compute** research system through the agentic-coding harnes
 
 ## Now
 
-- **Shipped:** Repository scaffolded on the agentic-coding harness (`machine-learning` profile). Minimal `src/` Python package, deterministic gates green.
-- **In review:** `work/research-bootstrap` — research definition, prior-art map, and v0 experiment design authored (`docs/`); ML declarations set PROVISIONAL. Awaiting `/3-review`.
-- **Next:** `/1-plan` the **fixed-budget reference bootstrap decision procedure** — deterministic, seeded, draws-accounted generators + reference (no adaptivity). It is the yardstick the first adaptive algorithm is judged against, and it wires `EVAL_COMMAND` into the gate. See `docs/experiment-design.md` §10.
+- **Shipped:** Harness scaffold (`machine-learning` profile); `research-bootstrap` (research definition, prior-art, v0 experiment design); **`fixed-budget-reference` v2026.9.0** — the deterministic, seeded, draws-accounted fixed-budget bootstrap reference + §6 generator battery (no adaptivity); `EVAL_COMMAND` wired; GROUND_TRUTH_SOURCE + DATA_REGIME resolved, EVAL_METRIC still PROVISIONAL.
+- **Next:** `/1-plan` the **adaptive procedure** (`docs/experiment-design.md` §3) — the system under test, judged against the fixed-budget reference. It consumes `bootstrap.py` (see `knowledge/bootstrap-seed-and-determinism.md`) and must resolve deferrals D1/D2 (`work/fixed-budget-reference/deferrals.md`).
+- **Queued (mechanical):** `/1-plan` **`release-tag-merge-commit`** — make `release.sh tag-after-merge` handle merge-commit PRs (or standardize on squash-merge). Small; see `work/fixed-budget-reference/retro.md`.
 
 ## Decisions
 
@@ -20,6 +20,9 @@ Build the **Adaptive Compute** research system through the agentic-coding harnes
 - 2026-09-19 — **Architecture: one repository** for adaptive validation + adaptive explainability (they share the "grow MC draws under an anytime-valid band until a decision resolves" controller), but the **shared abstraction stays un-scaffolded** until the explainability consumer exists. **Dynamic inference routing is deferred, likely a separate repo** (per-input, streaming, regime-A methodology — not the MC-budget primitive). Revisit if v0/v1 shows the controller genuinely reused. — `docs/research-definition.md` §5, `docs/prior-art.md`.
 - 2026-09-19 — ML declarations EVAL_METRIC / GROUND_TRUTH_SOURCE / DATA_REGIME set PROVISIONAL (not resolved) pending the reference unit; EVAL_COMMAND stays PENDING until code exists.
 - 2026-09-19 — Close-out shape for **spec-only / Orchestrator-authored units**: they produce only one review sentinel, so `scripts/release.sh` (two-sentinel precondition) cannot run — close them via a plain PR to `main`, no CalVer bump. If such units recur, spin a `/1-plan` unit to teach `release.sh` a single-review close-out path. — `work/research-bootstrap/retro.md`.
+- 2026-09-19 — **Reviewer calibration norm.** When the two `/3-review` reviewers split, the integration `code-reviewer` is the calibration anchor (its own contract: blocking on LOW-only findings is miscalibration); Codex tends to REQUEST CHANGES on latent/cosmetic items. Genuine design splits go to the Owner to arbitrate; otherwise ship on the integration reviewer's APPROVE with the latent items written to `deferrals.md`. Do not churn the implementer round-after-round on non-live findings. — `work/fixed-budget-reference/retro.md`.
+- 2026-09-19 — **This harness build does not register digit-prefixed slash commands (`/1-plan`…) or `.claude/agents/*.md` as spawnable `subagent_type`s.** Invoke the loop skills directly (Skill tool) and stand in fresh read-only `Plan` subagents for the `plan-reviewer` / `code-reviewer` roles (writer ≠ reviewer preserved). — `work/fixed-budget-reference/retro.md`.
+- 2026-09-19 — **`release.sh tag-after-merge` assumes a squash/rebase/ff merge** (origin/main tip must *be* the release commit). A merge-commit PR breaks it even when `main` has not advanced past the release; v2026.9.0 was tagged at the release commit by hand once. Durable fix queued as `/1-plan release-tag-merge-commit`. — `work/fixed-budget-reference/retro.md`.
 
 ## Risks
 
