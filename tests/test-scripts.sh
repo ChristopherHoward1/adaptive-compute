@@ -1903,23 +1903,70 @@ check "tag-after-merge creates local tag on origin/main and pushes nothing" bash
   [ ! -s '$push_log' ]
 "
 
-setup_release_fixture release-tag-after-merge-wrong-commit 2026.8.9 "Code-review verdict: APPROVE" pass fresh
-check "tag-after-merge refuses when origin/main advanced past the release" bash -c "
+check "tag-after-merge refuses when local tag already exists" bash -c "
+  cd '$REL_WORKTREE'
+  retag_out='$TMP/tag-after-merge-retag.out'
+  if PATH='$REL_FAKEBIN':\$PATH bash scripts/release.sh tag-after-merge demo >\"\$retag_out\" 2>&1; then
+    exit 1
+  fi
+  grep -q 'tag v2026.8.10 already exists' \"\$retag_out\"
+"
+
+setup_release_fixture release-tag-after-merge-merge-commit 2026.8.9 "Code-review verdict: APPROVE" pass fresh
+check "tag-after-merge tags release commit below merge commit and pushes nothing" bash -c "
+  set -e
+  : > '$push_log'
+  cd '$REL_WORKTREE'
+  PATH='$REL_FAKEBIN':\$PATH bash scripts/release.sh demo
+  release_commit=\$(git rev-parse HEAD)
+  git -C '$REL_PRIMARY' fetch -q origin main
+  git -C '$REL_PRIMARY' reset -q --hard origin/main
+  printf 'reviewed\n' > '$REL_PRIMARY/review.txt'
+  git -C '$REL_PRIMARY' add review.txt
+  GIT_AUTHOR_DATE='2026-08-16T10:02:00Z' GIT_COMMITTER_DATE='2026-08-16T10:02:00Z' git -C '$REL_PRIMARY' commit -qm 'Review release PR'
+  GIT_AUTHOR_DATE='2026-08-16T10:03:00Z' GIT_COMMITTER_DATE='2026-08-16T10:03:00Z' git -C '$REL_PRIMARY' merge --no-ff -m 'Merge release PR' wt/demo
+  git -C '$REL_PRIMARY' push -q origin main
+  PATH='$tag_guard_bin:$REL_FAKEBIN':\$PATH bash scripts/release.sh tag-after-merge demo
+  [ \"\$(git rev-parse refs/tags/v2026.8.10)\" = \"\$release_commit\" ] &&
+  [ \"\$(git rev-parse refs/tags/v2026.8.10)\" != \"\$(git rev-parse origin/main)\" ] &&
+  [ ! -s '$push_log' ]
+"
+
+setup_release_fixture release-tag-after-merge-squash 2026.8.9 "Code-review verdict: APPROVE" pass fresh
+check "tag-after-merge tags squash commit with non-release subject" bash -c "
+  set -e
+  cd '$REL_WORKTREE'
+  PATH='$REL_FAKEBIN':\$PATH bash scripts/release.sh demo
+  git -C '$REL_PRIMARY' fetch -q origin main
+  git -C '$REL_PRIMARY' reset -q --hard origin/main
+  cp '$REL_WORKTREE/VERSION' '$REL_PRIMARY/VERSION'
+  cp '$REL_WORKTREE/CHANGELOG.md' '$REL_PRIMARY/CHANGELOG.md'
+  printf 'demo\n' > '$REL_PRIMARY/work/.last-released'
+  git -C '$REL_PRIMARY' add VERSION CHANGELOG.md work/.last-released
+  GIT_AUTHOR_DATE='2026-08-16T10:03:00Z' GIT_COMMITTER_DATE='2026-08-16T10:03:00Z' git -C '$REL_PRIMARY' commit -qm 'Merge pull request #7 from wt/demo'
+  squash_commit=\$(git -C '$REL_PRIMARY' rev-parse HEAD)
+  git -C '$REL_PRIMARY' push -q origin main
+  PATH='$REL_FAKEBIN':\$PATH bash scripts/release.sh tag-after-merge demo
+  [ \"\$(git rev-parse refs/tags/v2026.8.10)\" = \"\$squash_commit\" ]
+"
+
+setup_release_fixture release-tag-after-merge-not-current 2026.8.9 "Code-review verdict: APPROVE" pass fresh
+check "tag-after-merge refuses when origin/main version advanced past the release" bash -c "
   set -e
   cd '$REL_WORKTREE'
   PATH='$REL_FAKEBIN':\$PATH bash scripts/release.sh demo
   git push -q origin wt/demo:main
   git -C '$REL_PRIMARY' fetch -q origin main
   git -C '$REL_PRIMARY' reset -q --hard origin/main
-  printf 'next change\n' > '$REL_PRIMARY/after-release.txt'
-  git -C '$REL_PRIMARY' add after-release.txt
-  GIT_AUTHOR_DATE='2026-08-16T10:03:00Z' GIT_COMMITTER_DATE='2026-08-16T10:03:00Z' git -C '$REL_PRIMARY' commit -qm 'Next change'
+  printf '2026.8.11\n' > '$REL_PRIMARY/VERSION'
+  git -C '$REL_PRIMARY' add VERSION
+  GIT_AUTHOR_DATE='2026-08-16T10:03:00Z' GIT_COMMITTER_DATE='2026-08-16T10:03:00Z' git -C '$REL_PRIMARY' commit -qm 'Release v2026.8.11'
   git -C '$REL_PRIMARY' push -q origin main
-  wrong_out='$TMP/tag-after-merge-wrong.out'
-  if PATH='$REL_FAKEBIN':\$PATH bash scripts/release.sh tag-after-merge demo >\"\$wrong_out\" 2>&1; then
+  not_current_out='$TMP/tag-after-merge-not-current.out'
+  if PATH='$REL_FAKEBIN':\$PATH bash scripts/release.sh tag-after-merge demo >\"\$not_current_out\" 2>&1; then
     exit 1
   fi
-  grep -q 'origin/main is not Release v2026.8.10' \"\$wrong_out\" &&
+  grep -q 'origin/main VERSION is 2026.8.11, not 2026.8.10' \"\$not_current_out\" &&
   ! git rev-parse --verify --quiet refs/tags/v2026.8.10
 "
 
