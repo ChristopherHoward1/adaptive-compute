@@ -51,16 +51,26 @@ def _validated_arrays(
 ) -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.int_]]:
     scores_a_array = np.asarray(scores_a, dtype=np.float64)
     scores_b_array = np.asarray(scores_b, dtype=np.float64)
-    y_array = np.asarray(y, dtype=np.int_)
-    if scores_a_array.ndim != 1 or scores_b_array.ndim != 1 or y_array.ndim != 1:
+    labels = np.asarray(y)
+    if scores_a_array.ndim != 1 or scores_b_array.ndim != 1 or labels.ndim != 1:
         msg = "scores_a, scores_b, and y must be one-dimensional"
         raise ValueError(msg)
-    if scores_a_array.shape != scores_b_array.shape or scores_a_array.shape != y_array.shape:
+    if scores_a_array.shape != scores_b_array.shape or scores_a_array.shape != labels.shape:
         msg = "scores_a, scores_b, and y must have the same shape"
         raise ValueError(msg)
-    if y_array.size == 0:
+    if labels.size == 0:
         msg = "scores_a, scores_b, and y must be non-empty"
         raise ValueError(msg)
+    if not np.all(np.isfinite(scores_a_array)):
+        msg = "scores_a must contain only finite values"
+        raise ValueError(msg)
+    if not np.all(np.isfinite(scores_b_array)):
+        msg = "scores_b must contain only finite values"
+        raise ValueError(msg)
+    if not np.all((labels == 0) | (labels == 1)):
+        msg = "y must contain only binary labels 0/1"
+        raise ValueError(msg)
+    y_array = labels.astype(np.int_, copy=False)
     return scores_a_array, scores_b_array, y_array
 
 
@@ -90,7 +100,8 @@ def _resample_deltas(
             0.5 * (pos_scores[:, None] == neg_scores[None, :])
         )
 
-    pair_delta = pair_kernel(scores_a) - pair_kernel(scores_b)
+    pair_a = pair_kernel(scores_a)
+    pair_b = pair_kernel(scores_b)
 
     written = 0
     while written < draws:
@@ -103,13 +114,21 @@ def _resample_deltas(
         pos_totals = np.sum(pos_weights, axis=1)
         neg_totals = np.sum(neg_weights, axis=1)
         denominators = pos_totals * neg_totals
-        numerators = np.einsum("bp,pn,bn->b", pos_weights, pair_delta, neg_weights)
-        batch_values = np.divide(
-            numerators,
+        numerators_a = np.einsum("bp,pn,bn->b", pos_weights, pair_a, neg_weights)
+        numerators_b = np.einsum("bp,pn,bn->b", pos_weights, pair_b, neg_weights)
+        auc_a = np.divide(
+            numerators_a,
             denominators,
             out=np.zeros(current, dtype=np.float64),
             where=denominators > 0.0,
         )
+        auc_b = np.divide(
+            numerators_b,
+            denominators,
+            out=np.zeros(current, dtype=np.float64),
+            where=denominators > 0.0,
+        )
+        batch_values = auc_a - auc_b
         values[written : written + current] = batch_values
         written += current
     return values

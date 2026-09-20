@@ -27,7 +27,7 @@ from adaptive_compute.sweep import fixed_b_sweep, pareto_verdict
 DEFAULT_BATCH = 32
 DEFAULT_B_MAX = 2048
 DEFAULT_N_TUNE = 24
-DEFAULT_N_TEST = 500
+DEFAULT_N_TEST = 2000
 TEST_SEED_OFFSET = 10_000
 FIXED_B_GRID = (32, 64, 128, DEFAULT_B_REF)
 TARGET_SAVINGS_RATIO = 2.0
@@ -79,6 +79,8 @@ class BenchmarkResult:
     n_test: int
     summaries: tuple[StratumSummary, ...]
     heavy_tailed_false_stop_rate: float | None
+    false_stop_test_pass: bool
+    savings_pareto_pass: bool
     h1_holds: bool
     runs: tuple[MemberRun, ...]
 
@@ -294,18 +296,21 @@ def run_benchmark(
                 ]
             )
         )
-    h1_holds = all(
-        summary.false_stop_ci[1] <= DEFAULT_ALPHA
-        and not summary.fixed_b_dominating_adaptive
+    false_stop_test_pass = all(summary.false_stop_ci[1] < DEFAULT_ALPHA for summary in summaries)
+    savings_pareto_pass = all(
+        not summary.fixed_b_dominating_adaptive
         and summary.pareto_best_savings_ratio >= TARGET_SAVINGS_RATIO
         for summary in summaries
     )
+    h1_holds = false_stop_test_pass and savings_pareto_pass
     return BenchmarkResult(
         tuned_params=tuned,
         n_tune=n_tune,
         n_test=n_test,
         summaries=summaries,
         heavy_tailed_false_stop_rate=heavy_false,
+        false_stop_test_pass=false_stop_test_pass,
+        savings_pareto_pass=savings_pareto_pass,
         h1_holds=h1_holds,
         runs=tuple(runs),
     )
@@ -313,10 +318,26 @@ def run_benchmark(
 
 def _summary_markdown(result: BenchmarkResult) -> str:
     verdict = "H1 HOLDS" if result.h1_holds else "H1 NEGATIVE RESULT"
+    false_stop_detail = (
+        "PASS in every non-boundary stratum (all upper CIs < alpha)"
+        if result.false_stop_test_pass
+        else "FAIL (at least one non-boundary stratum has upper CI >= alpha)"
+    )
+    savings_detail = (
+        "PASS (adaptive dominates a fixed-B at >=2x in every stratum)"
+        if result.savings_pareto_pass
+        else "FAIL (no adaptive-dominated fixed-B at >=2x in every stratum)"
+    )
     lines = [
         "# Adaptive Procedure First Result",
         "",
         f"Verdict: **{verdict}**.",
+        (
+            f"False-stop test (\u00a77): {false_stop_detail}. "
+            f"Savings/Pareto (\u00a78): {savings_detail}. "
+            "Therefore H1 is "
+            f"{'supported' if result.h1_holds else 'unsupported on the savings criterion'}."
+        ),
         "",
         (
             f"Tuned on {result.n_tune} seeds/member; tested on {result.n_test} "

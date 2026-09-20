@@ -22,3 +22,5 @@ def test_small_benchmark_excludes_unresolved_and_writes_artifacts(tmp_path) -> N
     assert "H1" in md_path.read_text(encoding="utf-8")
     payload = json.loads(json_path.read_text(encoding="utf-8"))
     assert payload["n_test"] == 1
+    assert "false_stop_test_pass" in payload
+    assert "savings_pareto_pass" in payload
