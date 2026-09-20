@@ -1,6 +1,6 @@
 # release-tag-merge-commit — tag the release commit by SHA, not origin/main's tip
 
-**Slug:** release-tag-merge-commit · **Date:** 2026-09-19 · **Status:** draft
+**Slug:** release-tag-merge-commit · **Date:** 2026-09-19 · **Status:** implemented
 
 ## Goal
 
@@ -148,3 +148,15 @@ recovery that stays manual rather than widening this unit's scope or weakening t
 back-tagging is wanted — that would be a separate unit.
 
 Plan verdict: APPROVE (post-revision)
+
+### /3-review — round 1 (both reviewers cold, read-only)
+
+Gate: PASS (188/188, run independently by the code-reviewer; no segfault in the repo env — the implementer's reported segfault was the known pytest sandbox artifact). All seven acceptance criteria met; footprint respected (only `tag_after_merge`, the `usage()` doc lines, the success message, and `tests/test-scripts.sh`).
+
+Code-review verdict: APPROVE
+Codex-review verdict: APPROVE
+
+LOW findings (recorded for awareness; none blocking — all fail *safe*, i.e. a false refusal in an off-nominal history, never a wrong tag; and VERSION is written only by `release.sh:245`, so those histories are not produced by the tool):
+- L1 — the locator dies if a candidate commit *deleted* VERSION; unreachable because the newest transition-to-$version commit is found and the loop breaks first.
+- L2 — the transition check uses only the first parent (`${parent%% *}`); an evil/octopus merge that edited VERSION in the merge itself and whose first parent already held $version could be skipped → safe refusal, never a mistag.
+- L3 — the parent-transition guard is effectively redundant given "take newest matching candidate and break"; its only off-nominal effect is to turn a would-be mistag into a safe refusal (desirable).
