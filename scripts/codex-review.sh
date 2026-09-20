@@ -12,6 +12,18 @@ die2() {
   exit 2
 }
 
+fetch_origin_best_effort() {
+  local timeout_bin=""
+
+  if timeout_bin=$(command -v timeout); then
+    "$timeout_bin" "${WORKTREE_FETCH_TIMEOUT:-30}" git fetch origin --quiet 2>/dev/null || true
+  elif timeout_bin=$(command -v gtimeout); then
+    "$timeout_bin" "${WORKTREE_FETCH_TIMEOUT:-30}" git fetch origin --quiet 2>/dev/null || true
+  else
+    git fetch origin --quiet 2>/dev/null || true
+  fi
+}
+
 if [[ $# -ne 1 ]]; then
   usage
   exit 2
@@ -95,7 +107,7 @@ else
   printf '(none recorded)\n' >>"$prompt"
 fi
 
-git fetch origin --quiet 2>/dev/null || true
+fetch_origin_best_effort
 if git show-ref --verify --quiet refs/remotes/origin/main; then
   base=origin/main
 else
@@ -110,10 +122,10 @@ git diff "$base...$branch" -- ':/' ":(exclude,top)work/$slug" >>"$prompt" \
   printf '\n'
   printf '## Severity\n\n'
   printf 'Every finding gets exactly one severity:\n'
-  printf '- CRITICAL: data loss, security hole, or silent wrong result. Blocks in any round.\n'
-  printf '- HIGH: incorrect behavior under a realistic scenario. Blocks in any round.\n'
-  printf '- MEDIUM: robustness gap, missing validation, or incomplete contract. Never sets the verdict; report it for the orchestrator to route.\n'
-  printf '- LOW: style, naming, log hygiene, non-blocking edge cases. Never blocks.\n\n'
+  printf '%s\n' '- CRITICAL: data loss, security hole, or silent wrong result. Blocks in any round.'
+  printf '%s\n' '- HIGH: incorrect behavior under a realistic scenario. Blocks in any round.'
+  printf '%s\n' '- MEDIUM: robustness gap, missing validation, or incomplete contract. Never sets the verdict; report it for the orchestrator to route.'
+  printf '%s\n\n' '- LOW: style, naming, log hygiene, non-blocking edge cases. Never blocks.'
   printf 'A finding without a concrete failure scenario is LOW by definition.\n\n'
   printf '## Calibration\n\n'
   printf 'Focus on what breaks the acceptance criteria, not on what you would write differently.\n'

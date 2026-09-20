@@ -854,7 +854,6 @@ check "code-reviewer agent is told deferrals are settled scope" grep -F 'work/<s
 check "code-reviewer agent defines severity taxonomy" grep -F "CRITICAL" .claude/agents/code-reviewer.md
 check "code-reviewer agent has calibration section" grep -F "Calibration" .claude/agents/code-reviewer.md
 check "code-reviewer agent requires concrete failure for blocking" grep -F "finding without a concrete failure scenario is LOW" .claude/agents/code-reviewer.md
-check "codex-review prompt includes severity taxonomy" grep -F "CRITICAL" scripts/codex-review.sh
 check "codex-review prompt includes calibration guidance" grep -F "Calibration" scripts/codex-review.sh
 check "codex-review prompt passes round number" grep -F "REVIEW_ROUND" scripts/codex-review.sh
 check "3-review skill tracks round counter" grep -F "work/<slug>/review-round" skills/3-review/SKILL.md
@@ -925,6 +924,12 @@ check "codex-review from subdirectory excludes work unit artifacts" bash -c "
 "
 check "codex-review marks an absent deferral ledger explicitly" bash -c "
   grep -Fq '(none recorded)' '$TMP/codex-excludes-work-artifacts/prompt.txt'
+"
+check "codex-review rendered prompt includes severity taxonomy" bash -c "
+  grep -Fq -- '- CRITICAL:' '$TMP/codex-excludes-work-artifacts/prompt.txt' &&
+  grep -Fq -- '- HIGH:' '$TMP/codex-excludes-work-artifacts/prompt.txt' &&
+  grep -Fq -- '- MEDIUM:' '$TMP/codex-excludes-work-artifacts/prompt.txt' &&
+  grep -Fq -- '- LOW:' '$TMP/codex-excludes-work-artifacts/prompt.txt'
 "
 
 setup_codex_review_fixture codex-deferrals capture-prompt
