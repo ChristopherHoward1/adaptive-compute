@@ -10,7 +10,7 @@ Python 3.12 (`src/` layout) for the research code, plus the agentic-coding harne
 
 - `CLAUDE.md` / `ARCHI.md` / `PLAN.md` — the hot context tier (loaded every session, ~300-line budget).
 - `config.yaml` — the single knob: `profile: machine-learning`, per-role models, implementer runtime (`codex`), gate command + required tools (`shellcheck`), worktree dir (`../adaptive-compute-worktrees`).
-- `src/adaptive_compute/` — the Python package. `metrics.py` implements numpy-only AUC and paired `Δ`; `generators.py` holds the five-member frozen synthetic battery; `bootstrap.py` is the paired row-resampler with exact draw accounting and `SeedSequence.spawn` branches; `reference.py` is the fixed-budget percentile-bootstrap decision; `strata.py` classifies plug-in `Δ(E)` difficulty; `eval.py` exposes `python -m adaptive_compute.eval`.
+- `src/adaptive_compute/` — the Python package. `metrics.py` implements numpy-only AUC and paired `Δ`; `generators.py` holds the five-member frozen synthetic battery; `bootstrap.py` is the paired row-resampler with exact draw accounting and `SeedSequence.spawn` branches; `reference.py` is the fixed-budget percentile-bootstrap decision; `adaptive.py` is the blind adaptive bootstrap controller with an empirical-Bernstein confidence sequence; `sweep.py` holds fixed-B sweep and Pareto helpers; `benchmark.py` runs the offline first-result harness; `strata.py` classifies plug-in `Δ(E)` difficulty; `eval.py` exposes `python -m adaptive_compute.eval`.
 - `tests/` — `test_smoke.py` (package-import smoke test), `test-scripts.sh` (the harness's shell smoke suite), and fixed-budget reference tests for metrics, generators, bootstrap determinism/accounting, reference decisions, and eval-check failure behavior.
 - `pyproject.toml` — package metadata + numpy runtime dependency + tool config: ruff (lint `E,F,I` + format), pytest (`pythonpath=["src"]`), mypy.
 - `skills/` — the loop stages (`1-plan`…`5-retro`) plus `init` and `compact`; exposed to Claude Code via the `.claude/skills → ../skills` symlink.
@@ -26,6 +26,7 @@ Python 3.12 (`src/` layout) for the research code, plus the agentic-coding harne
 
 - **The loop:** `/1-plan` → `/2-implement` → `/3-review` → `/4-release` → `/5-retro`, invoked as skills from the orchestrator session.
 - **`scripts/gate.sh`** — run from anywhere; `cd`s to repo root, auto-detects stacks (here: Python + Shell), runs applicable checks + `gate.d/*.sh` hooks. Exit 0 = pass.
+- **`python -m adaptive_compute.eval --run`** — offline adaptive benchmark path; writes `work/adaptive-procedure/results.md` and `results.json` outside the fast gate.
 - **`scripts/release.sh <slug>`** / **`worktree.sh`** / **`agent-exec.sh`** / **`state.sh`** — as documented in the harness, with one local divergence: `release.sh tag-after-merge` locates the release commit by its `VERSION` transition on `origin/main` and tags that SHA (not the branch tip), so merge-commit / squash / non-ff PR merges tag correctly. The current-version guard (`origin/main:VERSION` must equal the release version) is retained.
 
 ## Conventions
@@ -43,9 +44,9 @@ Python 3.12 (`src/` layout) for the research code, plus the agentic-coding harne
 
 ### ML profile declarations
 
-- **EVAL_METRIC** — PROVISIONAL (`docs/experiment-design.md` §5; adaptive unit resolves it). Decision-agreement with the full-budget reference + draws consumed (p50/p90/p99) + false-stop rate stratified by difficulty, held to a uniform tolerance. The metric suite remains undefined until the adaptive method exists.
+- **EVAL_METRIC** — RESOLVED as the adaptive first-result suite: decision agreement against the fixed-budget reference, per-stratum false-stop rate with binomial CI, draws consumed (p50/p90/p99), abstain rate, reference-unresolved count, and fixed-B Pareto/savings comparison.
 - **GROUND_TRUTH_SOURCE** — RESOLVED for this unit. Synthetic cases use the plug-in `Δ(E) = M(A,E) - M(B,E)` computed once on the frozen generated evaluation set for strata and expected-decision checks. The fixed-budget reference is labelled as the full-budget same-procedure conclusion, not truth.
-- **EVAL_COMMAND** — `python -m adaptive_compute.eval --check`, wired through `scripts/gate.d/eval.sh`.
+- **EVAL_COMMAND** — `python -m adaptive_compute.eval --check`, wired through `scripts/gate.d/eval.sh`; `python -m adaptive_compute.eval --run` is the offline result-producing command.
 - **DATA_REGIME** — RESOLVED for this unit. Offline, fixed evaluation sets from the five-member synthetic generator battery: near-δ-boundary, small-effect, heavy-tailed, rare-event/imbalance, and easy/lopsided. No streaming, no added data.
 - **NOTEBOOK_STRATEGY** — Exploratory-only, single-author under `notebooks/<initials>/`. `nb-clean.sh` enabled (no-op until a notebook is tracked).
 - **REPO_HYGIENE** — `ds-hygiene.sh` enabled with defaults (`DS_DATA_MAX_BYTES=1048576`, `DS_DATA_ALLOW_DIRS=tests/fixtures`, `DS_PATH_SCAN=1`).

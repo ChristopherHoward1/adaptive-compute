@@ -1,6 +1,9 @@
+import inspect
+
 import numpy as np
 import pytest
 
+from adaptive_compute import eval as eval_module
 from adaptive_compute import reference as reference_module
 from adaptive_compute.bootstrap import BootstrapResult, paired_bootstrap_deltas
 from adaptive_compute.generators import BATTERY, generate
@@ -87,14 +90,11 @@ def test_reference_mcse_sizing_uses_independent_replications() -> None:
 
 
 def test_reference_mcse_diagnostics_for_hard_members() -> None:
+    source = inspect.getsource(eval_module._hard_member_mcse)
+    assert "paired_bootstrap_deltas" in source
+    assert "fixed_budget_reference" not in source
+
     for member in ("heavy_tailed", "rare_event_imbalance"):
-        params, _generator = BATTERY[member]
-        scores_a, scores_b, y = generate(params)
-        root = np.random.SeedSequence(params.seed)
-        estimates = [
-            fixed_budget_reference(scores_a, scores_b, y, seed=seed_sequence).estimate
-            for seed_sequence in root.spawn(6)
-        ]
-        mcse = float(np.std(estimates, ddof=1))
+        mcse = eval_module._hard_member_mcse(member)
         print(f"{member} reference MCSE diagnostic: {mcse:.6f}")
         assert np.isfinite(mcse)
