@@ -1,6 +1,6 @@
 # Fix dropped severity taxonomy in the Codex review prompt
 
-**Slug:** codex-review-prompt-printf-fix · **Date:** 2026-09-20 · **Status:** approved
+**Slug:** codex-review-prompt-printf-fix · **Date:** 2026-09-20 · **Status:** implemented
 
 ## Goal
 
@@ -114,3 +114,21 @@ macOS-without-coreutils box stays unbounded (criterion reworded to say so).
 No disagreements to route to the Owner.
 
 Plan verdict: APPROVE
+
+### /3-review — round 1 (2026-09-20)
+
+Both reviewers APPROVE, zero findings; gate green (both ran it independently, 188/188).
+
+- **`code-reviewer`** (fresh cold `Plan` stand-in): APPROVE. Verified all six acceptance
+  criteria met — rendered prompt carries all four bullets; `grep -n "printf '- "` empty;
+  the new `grep -Fq --` test goes red on a re-drop (confirmed the bug reproduces and the
+  assertion is itself immune to the option-parse trap); source-grep at :857 retired, :854
+  left intact; bounded fetch with portable `timeout`/`gtimeout`-else-fallback, shellcheck
+  clean. Footprint exactly the three declared files. The duplicated `fetch_origin_best_effort`
+  is deliberate honest scope, not a defect (no shared-lib convention in `scripts/`).
+- **`codex-review.sh`** (cold read-only Codex, exit 0): APPROVE, no substantive findings.
+  Confirmed the `%s\n` idiom, the rendered-prompt test replacing the false source-grep, and
+  both fetch call sites bounded with fallback preserved.
+
+Code-review verdict: APPROVE
+Codex-review verdict: APPROVE
