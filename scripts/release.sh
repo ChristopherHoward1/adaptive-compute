@@ -15,8 +15,9 @@ Usage:
 The release path never pushes, never tags, and never touches main. It commits
 the version bump on the release branch for PR review.
 
-After the PR merges, tag-after-merge verifies origin/main is the release commit
-and creates the local version tag. The tag push is a separate confirmed step.
+After the PR merges, tag-after-merge locates the release commit by SHA from
+the VERSION transition on origin/main and creates the local version tag. The tag
+push is a separate confirmed step.
 EOF
 }
 
@@ -263,7 +264,12 @@ tag_after_merge() {
   local release_checkout
   local version
   local origin_version
-  local origin_subject
+  local release_commit
+  local release_subject
+  local candidate
+  local candidate_version
+  local parent
+  local parent_version
 
   release_checkout=$(worktree_for_branch "$release_branch") \
     || die "$release_branch must be checked out in a linked worktree"
@@ -276,16 +282,40 @@ tag_after_merge() {
   version=$(<"$release_checkout/VERSION")
   origin_version=$(git show origin/main:VERSION) \
     || die "origin/main does not contain VERSION"
-  origin_subject=$(git log -1 --format=%s origin/main)
 
-  [[ "$origin_version" == "$version" && "$origin_subject" == "Release v$version" ]] \
-    || die "origin/main is not Release v$version (VERSION is $origin_version; subject is '$origin_subject')"
+  [[ "$origin_version" == "$version" ]] \
+    || die "origin/main VERSION is $origin_version, not $version"
 
   git rev-parse --verify --quiet "refs/tags/v$version" >/dev/null \
     && die "tag v$version already exists"
 
-  git tag "v$version" origin/main
-  printf 'release: created local tag v%s on origin/main\n' "$version"
+  release_commit=
+  while IFS= read -r candidate; do
+    candidate_version=$(git show "$candidate:VERSION") \
+      || die "could not read VERSION at $candidate"
+    [[ "$candidate_version" == "$version" ]] || continue
+
+    parent=$(git rev-list --parents -n 1 "$candidate")
+    parent=${parent#"$candidate"}
+    parent=${parent# }
+    if [[ -z "$parent" ]]; then
+      release_commit="$candidate"
+      break
+    fi
+    parent=${parent%% *}
+    parent_version=$(git show "$parent:VERSION" 2>/dev/null || true)
+    [[ "$parent_version" != "$version" ]] || continue
+
+    release_commit="$candidate"
+    break
+  done < <(git log origin/main --format=%H -- VERSION)
+
+  [[ -n "$release_commit" ]] \
+    || die "could not locate release commit that set VERSION to $version on origin/main"
+
+  release_subject=$(git log -1 --format=%s "$release_commit")
+  git tag "v$version" "$release_commit"
+  printf 'release: created local tag v%s on %s (%s)\n' "$version" "$release_commit" "$release_subject"
 }
 
 if [[ $# -eq 0 ]]; then

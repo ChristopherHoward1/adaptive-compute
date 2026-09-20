@@ -26,7 +26,7 @@ Python 3.12 (`src/` layout) for the research code, plus the agentic-coding harne
 
 - **The loop:** `/1-plan` → `/2-implement` → `/3-review` → `/4-release` → `/5-retro`, invoked as skills from the orchestrator session.
 - **`scripts/gate.sh`** — run from anywhere; `cd`s to repo root, auto-detects stacks (here: Python + Shell), runs applicable checks + `gate.d/*.sh` hooks. Exit 0 = pass.
-- **`scripts/release.sh <slug>`** / **`worktree.sh`** / **`agent-exec.sh`** / **`state.sh`** — as documented in the harness (unchanged here).
+- **`scripts/release.sh <slug>`** / **`worktree.sh`** / **`agent-exec.sh`** / **`state.sh`** — as documented in the harness, with one local divergence: `release.sh tag-after-merge` locates the release commit by its `VERSION` transition on `origin/main` and tags that SHA (not the branch tip), so merge-commit / squash / non-ff PR merges tag correctly. The current-version guard (`origin/main:VERSION` must equal the release version) is retained.
 
 ## Conventions
 
