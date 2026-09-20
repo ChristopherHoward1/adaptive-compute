@@ -36,6 +36,18 @@ worktree_for_branch() {
   '
 }
 
+fetch_origin_best_effort() {
+  local timeout_bin=""
+
+  if timeout_bin=$(command -v timeout); then
+    "$timeout_bin" "${WORKTREE_FETCH_TIMEOUT:-30}" git fetch origin --quiet 2>/dev/null || true
+  elif timeout_bin=$(command -v gtimeout); then
+    "$timeout_bin" "${WORKTREE_FETCH_TIMEOUT:-30}" git fetch origin --quiet 2>/dev/null || true
+  else
+    git fetch origin --quiet 2>/dev/null || true
+  fi
+}
+
 case "$cmd" in
   add)
     [[ -n "$slug" ]] || { echo "usage: worktree.sh add <slug>" >&2; exit 1; }
@@ -45,7 +57,7 @@ case "$cmd" in
     if git show-ref --verify --quiet "refs/heads/wt/$slug"; then
       git worktree add "$path" "wt/$slug" >&2
     else
-      git fetch origin --quiet 2>/dev/null || true
+      fetch_origin_best_effort
       if git show-ref --verify --quiet refs/remotes/origin/main; then
         git worktree add -b "wt/$slug" "$path" origin/main >&2
       else
