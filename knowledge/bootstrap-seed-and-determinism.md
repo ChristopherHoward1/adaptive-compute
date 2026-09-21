@@ -34,6 +34,23 @@ handling must assert bit-identical replay for **(a) the same int seed twice** an
 `SeedSequence(k)` yields the same stream as `int k`. See
 `tests/test_determinism.py`.
 
+## Assert reference invariance at the ARRAY level, not the decision level
+
+When a change claims to leave the reference path unchanged — a resample-kernel
+optimization, a vectorization, any arithmetic refactor — assert bit-identity of the
+**Δ\* draw array** against a recorded pre-change baseline, not merely that the
+*decision* is unchanged. Decisions are far too coarse: the `adaptive-procedure` unit
+replaced the per-draw `metrics.delta` call with a vectorized AUC kernel that computed
+`(U_a − U_b)/D` instead of `U_a/D − U_b/D`, drifting the reference deltas by ~1e-16
+on most draws. Every decision was identical, so the decision-level regression tests
+stayed green through a full review round; only a reviewer manually diffing the arrays
+against `origin/main` caught it. The fix restored the original associativity
+(`auc_a − auc_b`) and added a hex-float delta-array regression test. Rule: a "reference
+unchanged" acceptance criterion is verified by `np.array_equal` against a recorded
+baseline array, and the same kernel change must re-add any input validation
+(finite scores, binary 0/1 labels) it displaced — a fast kernel that silently scores
+malformed input is a regression on the yardstick's trust boundary.
+
 ## Why it matters
 
 Compute is counted in draws and every result must be reproducible from
