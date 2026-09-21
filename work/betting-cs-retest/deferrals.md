@@ -1,0 +1,9 @@
+# Accepted deferrals — betting-cs-retest
+
+Settled scope from the `/3-review` rounds. Do not re-raise as findings against this unit; each names where it lands.
+
+## D-grid — Betting CS grid inversion returns the convex hull of surviving grid means, not a continuous inversion
+
+- **Raised (round 1, Codex HIGH → code-reviewer cleared):** `betting.py::betting_cs_bounds` reports `[min, max]` of the surviving grid means. Ville validity holds exactly at each *tested* grid mean; for a true mean strictly *between* grid points, the min/max hull is a grid approximation, and in principle a non-unimodal capital-in-`m` profile could reject both neighbours of the true mean and admit a false stop.
+- **Why deferred (reviewer split, anchor is the calibration authority — PLAN 2026-09-19):** the integration `code-reviewer` verified the construction is a genuine nonnegative martingale (both `K±` factors stay strictly positive under the `c=0.5` truncation for all `m∈[0,1]`), Ville applies, and the 401-point grid gives Δ-spacing 0.005 — fine relative to `δ=0.05`. Empirically the §7 false-stop rate is 0.0000 across ~8000 test seeds in *both* arms. The concern is a known, conservative-in-practice limitation of the WSR-grid method, not a live wrong result. Codex's suggested "continuous inversion" is disproportionate to a latent, empirically-contradicted risk. Resolution: keep the grid method; document the ceiling in-code (a `ponytail:` comment naming the convex-hull approximation, the fine-grid dependence, and continuous inversion as the upgrade path) rather than implement continuous inversion.
+- **Where it lands:** if a future unit ever needs the CS to certify arbitrary (non-grid) means — e.g. a much smaller `δ`, or a coarser grid for speed — implement continuous inversion or conservative ±one-cell padding then. Until then, the documented grid method stands.

@@ -1,0 +1,28 @@
+Resuming in the SAME worktree on branch wt/betting-cs-retest. Your gate passed, but the independent `/3-review` (two cold reviewers) returned REQUEST CHANGES. Fix every item below, stay inside the plan's footprint (work/betting-cs-retest/plan.md), re-run `scripts/gate.sh` until it passes, run `python -m adaptive_compute.eval --compare` to regenerate the artifacts, commit, and print an updated summary.
+
+## BLOCKING — HIGH (both reviewers agree)
+
+**F-A. The EB arm no longer reproduces released v0; `eval --run` would overwrite the protected v0 artifact with divergent numbers.**
+You changed `benchmark.py` `DEFAULT_BATCH` 32→64 and the EB `_tune_params` candidate set. Consequence: the EB arm now tunes to `B_max=1024` (equivalent p50=704, moderate p50=384) instead of released v0's `B_max=2048` (equivalent p50=768, moderate p50=448 — see `work/adaptive-procedure/results.md`). Since `eval --run` → `run_and_write_results()` → `run_benchmark(instrument="eb")` writes to `work/adaptive-procedure/results.*` (the released v0 artifact, marked NOT-to-touch in the plan footprint), running `--run` would now silently overwrite v0 with different medians, and the A/B's EB baseline is not the v0 instrument it is meant to re-test against.
+- **Fix:** restrict the **EB** arm's tuning so it reproduces v0's selection — tuned `b=64, B_max=2048` (e.g. make the EB candidate set `(2048,)` at `b=64`, or otherwise pin it to v0's choice). The **betting** arm keeps its own `< 2048` `B_max` candidates. `b` stays fixed at 64 for BOTH arms (do not reintroduce b=32 — the controlled A/B requires a shared batch size).
+- **Verify:** after the fix, `work/betting-cs-retest/results-eb.md` shows `B_max=2048` and equivalent/moderate medians `768/448` matching v0; and confirm `git diff origin/main...wt/betting-cs-retest -- work/adaptive-procedure/` is EMPTY (you must NOT modify or regenerate the v0 artifact — generate only the `work/betting-cs-retest/` artifacts via `--compare`).
+
+## BLOCKING-for-this-round — load-bearing test gaps (MEDIUM, but they are the plan's validity criteria, so they must actually test)
+
+**F-B. `test_predictable_bound_ignores_future_suffix_changes` is vacuous.** Both `first` and `second` are sliced `[: prefix.size]`, so both calls receive exactly `prefix` — the assertion is `bounds(prefix) == bounds(prefix)`, which cannot detect a λ lookahead. Rewrite it so it genuinely proves predictability: the capital/bound at step `t` must be unaffected by draws after `t`. Concretely, assert `hedged_capital_path(concat(prefix, future_a))[: prefix.size]` equals `hedged_capital_path(concat(prefix, future_b))[: prefix.size]` for two DIFFERENT suffixes (or an equivalent construction on `_running_max_hedged_capital`). The point is that a real lookahead bug would make this fail.
+
+**F-C. `test_drop_in_stream_equivalence_for_fixed_batch_prefix` is vacuous.** It builds two identically-constructed fresh `adaptive_bootstrap_stream(...)` and asserts they equal each other — a tautology that never compares the EB vs betting arms' consumed streams. Make it actually verify the plan's criterion: the deltas consumed by `adaptive_decision(instrument="eb")` and `instrument="betting")` at matched-prefix draws are identical (only the band differs). Since the arms don't expose their consumed values, reconstruct the shared stream via `adaptive_bootstrap_stream(scores, y, batch_draws=64, max_draws=..., seed=...)` and REPLAY the band yourself (feed the reconstructed cumulative deltas through `empirical_bernstein_bounds` and `betting_cs_bounds` batch-by-batch) to reproduce each arm's `decision` and `draws_consumed` from that one stream — proving both arms rode the identical stream. `np.array_equal` on the reconstructed deltas is the core assertion.
+
+## BLOCKING-for-this-round — cheap correctness on the deliverable
+
+**F-D. `comparison.md` headline can mislabel a §7 failure.** In `eval.py::_compare`, the non-flip branch always prints "did not flip to true while preserving §7", even when `betting.false_stop_test_pass` is False. Branch the prose so it distinguishes "no flip because savings still failed (§7 held)" from "no flip because §7 failed". (The flip-detection boolean itself is correct — only the non-flip wording needs to reflect whether §7 held.)
+
+## DO NOT change — accepted deferral (recorded in work/betting-cs-retest/deferrals.md)
+
+Codex raised the betting-CS grid inversion (min/max of surviving grid means is a grid approximation, not continuous inversion) as HIGH. The integration reviewer cleared the construction as sound and anytime-valid, and it is empirically clean (0.0000 false-stop over ~8000 seeds in both arms). **Do NOT implement continuous inversion.** The only action here is documentation: add a short `ponytail:` comment at the `betting_cs_bounds` return (where `survivors[0]`/`survivors[-1]` are taken) naming the ceiling — the returned interval is the convex hull of surviving grid means, valid exactly at grid points, conservative in practice, relying on the fine (401-pt) grid; upgrade path = continuous inversion or ±one-cell padding if a future unit needs arbitrary non-grid means. Keep the grid method.
+
+## When done
+1. `scripts/gate.sh` passes (exit 0).
+2. `python -m adaptive_compute.eval --compare` regenerates `work/betting-cs-retest/results-eb.{md,json}`, `results-betting.{md,json}`, `comparison.md`; confirm the EB arm now shows `B_max=2048` / medians `768/448`.
+3. Confirm `work/adaptive-procedure/results.*` is untouched on the branch.
+4. Commit on wt/betting-cs-retest. Print a summary of what changed per finding, and restate the headline A/B verdict (it should be unchanged: no flip, savings still fail in the equivalent stratum).
