@@ -42,3 +42,31 @@ into an easier problem than the experiment design intended.
 
 Naive per-batch percentile intervals are also rejected: repeatedly checking a
 fixed-time interval after each batch is not optional-stopping valid.
+
+## Reading the result: the abstain-vacuity trap
+
+**False-stop rate is only meaningful conditioned on a low abstain / non-decision
+rate.** Read the abstain column *before* the false-stop column. A procedure that
+abstains on ~100% of a stratum records a false-stop rate of 0 trivially — it never
+makes a wrong call because it barely makes calls — and it will pass every mechanical
+check (`eval --check`, determinism, accounting) while the headline "H1 negative" it
+prints is scientifically vacuous. This was the v0 first-result artifact's initial
+state (`equivalent`/`moderate` abstained ~100% at `B_max=320`) and only a cold
+reviewer, reading the artifact's own numbers, caught it. Any consumer of the result
+must confirm the adaptive procedure actually *resolves* before trusting a false-stop
+rate.
+
+## Sizing `B_max` against the boundary, not against `B_ref`
+
+`B_max` must be sized against **this boundary's resolving power**, never set equal to
+`B_ref`. The finite-horizon empirical-Bernstein radius is dominated by its linear
+term `≈ 14·log_term/(3n)`; at `n = 320` that term alone is ≈ 0.121 — larger than a
+typical `δ = 0.05`, so the interval half-width *cannot* fall below δ and an
+`equivalent` case (which needs the band wholly inside `[−δ, +δ]`) is unresolvable at
+that budget regardless of variance. The reference's percentile interval resolves at
+`B_ref` because it is a *fixed-width* functional; the mean CS must instead shrink
+Monte-Carlo error below δ, which takes many more draws. Pick `B_max` on the tune
+split from candidates large enough for the boundary to resolve non-boundary
+low-variance cases, and expect it to exceed `B_ref` substantially. (A tighter
+anytime-valid instrument — a Waudby-Smith–Ramdas betting CS — would resolve at far
+smaller budgets; the v0 EB negative is specific to this boundary's looseness.)
