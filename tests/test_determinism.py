@@ -7,9 +7,8 @@ import numpy as np
 from adaptive_compute import eval as eval_module
 from adaptive_compute.bootstrap import (
     BootstrapResult,
-    adaptive_seed,
+    adaptive_bootstrap_stream,
     paired_bootstrap_deltas,
-    reference_seed,
 )
 from adaptive_compute.generators import BATTERY, generate
 from adaptive_compute.reference import DEFAULT_B_REF
@@ -44,13 +43,21 @@ def test_delta_draws_replay_when_reusing_the_same_seedsequence_object() -> None:
 def test_reference_and_future_adaptive_branches_are_distinct() -> None:
     params, _generator = BATTERY["small_effect"]
     scores_a, scores_b, y = generate(params)
-    ref_seed = reference_seed(777)
-    adapt_seed = adaptive_seed(777)
 
-    reference = paired_bootstrap_deltas(scores_a, scores_b, y, draws=60, seed=ref_seed)
-    adaptive = paired_bootstrap_deltas(scores_a, scores_b, y, draws=60, seed=adapt_seed)
+    reference = paired_bootstrap_deltas(scores_a, scores_b, y, draws=60, seed=777)
+    adaptive = next(
+        adaptive_bootstrap_stream(
+            scores_a,
+            scores_b,
+            y,
+            batch_draws=60,
+            max_draws=60,
+            seed=777,
+        )
+    )
 
-    assert ref_seed.spawn_key != adapt_seed.spawn_key
+    assert reference.seed_spawn_key == (0,)
+    assert adaptive.seed_spawn_key == (1,)
     assert not np.array_equal(reference.deltas, adaptive.deltas)
 
 
