@@ -1,6 +1,6 @@
 # Adaptive Monte-Carlo stopping procedure + first-result eval harness
 
-**Slug:** adaptive-procedure · **Date:** 2026-09-20 · **Status:** approved
+**Slug:** adaptive-procedure · **Date:** 2026-09-20 · **Status:** reviewed
 
 ## Goal
 
@@ -286,3 +286,37 @@ raising call — criterion reworded accordingly.
 anytime-valid instrument (vs. the tail-probability alternative). No open items.
 
 Plan verdict: **REVISE → addressed; APPROVED.**
+
+---
+
+### Code review (/3-review) — three rounds, dual APPROVE
+
+Two independent cold reviewers per round: the `code-reviewer` (stood in as a read-only
+`Plan`-type subagent, the named agent type being unregistered in this build; writer ≠
+reviewer preserved) and Codex via `scripts/codex-review.sh`. Reached dual APPROVE at
+round 3. Accepted deferrals: `deferrals.md` A1–A5 (all latent LOW). The result is a
+genuine, non-artifact **H1 NEGATIVE**: the adaptive method resolves every non-boundary
+case with a **zero false-stop rate** in all strata (§7 test PASS, heavy-tail member 0.0000,
+no vacuous abstain), but **fails §8's ≥2× savings/Pareto gate** — its median draws
+(448 moderate / 768 equivalent) exceed the whole fixed-B grid, so it does not beat a
+well-chosen fixed budget on compute. Honest negative, shippable per §8.
+
+- **R1** (both REQUEST CHANGES): CRITICAL — the first result was a *vacuous artifact*: a
+  too-loose EB boundary (linear term 0.1215 > δ) plus `B_max=320` made `equivalent`/`moderate`
+  abstain ~100%, so the false-stop 0.0 was meaningless and §6/§8 non-falsifiable. HIGH — the
+  fixed-B/Pareto comparison was scored on the reference's own draws with unresolved fixed-B
+  credited cheap budget, and the §8 ≥2× gate was unchecked. HIGH — a decision resolving on the
+  final batch was discarded as `abstain`. Fixed: finite-horizon EB boundary + tuned `B_max=2048`
+  (tune split), fair independent-stream fixed-B with symmetric non-decision accounting, ≥2× gate
+  wired in, terminal-batch resolution honored, and the AUC kernel optimized.
+- **R2** (code-reviewer APPROVE / Codex REQUEST CHANGES): the round-1 optimization had dropped
+  reference-path input validation (silent Δ*=0 on malformed input) and broke bit-identity (~1e-16
+  reassociation drift); `N_test=500` missed the §7 CI-precision commitment. Fixed: validation
+  restored on both paths, original arithmetic association restored (bit-identical), `N_test=2000`,
+  and a §7-test/§8-conclusion breakdown added to the artifact.
+- **R3**: **both APPROVE.** Anchor independently verified bit-identity (max abs diff 0.0),
+  restored validation, `N_test=2000` (Wilson upper at k=0,n=2000 = 0.0019 ≪ 0.01), and the valid
+  §8 negative. Remaining findings all LOW → `deferrals.md` A1–A5.
+
+Code-review verdict: APPROVE
+Codex-review verdict: APPROVE
