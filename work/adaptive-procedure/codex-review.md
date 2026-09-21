@@ -1,7 +1,10 @@
-**HIGH** `src/adaptive_compute/bootstrap.py`: the new `_validated_arrays` path no longer validates finite scores or binary labels before replacing the old `metrics.delta(...)` call. `_resample_deltas` then treats `y == 1` as positive and every other value as negative, so inputs like `y=[0,2]` or NaN scores silently produce bootstrap deltas instead of raising. That changes the frozen reference path’s trust-boundary behavior and can yield silent wrong scientific results. Reuse the existing metric validation or add equivalent finite/binary checks before resampling.
+**Findings**
+- MEDIUM: `eval --check` draw accounting no longer preserves the pre-unit reference draw count. The plan explicitly requires the existing reference draw count to stay bit-identical, but `total_draws` now includes adaptive runs and hard-member MCSE diagnostics in addition to the old reference draws (`src/adaptive_compute/eval.py`). Track/report/assert the reference subtotal separately.
 
-**HIGH** `src/adaptive_compute/benchmark.py`: `h1_holds` folds Pareto/savings into the H1 verdict. The plan defines the H1 test as “upper CI ≤ α in every non-boundary stratum,” while Pareto/savings is a separate comparison. As written, a run with acceptable false-stop CIs but less than 2x savings will be reported as `H1 NEGATIVE RESULT`, which misstates the statistical result artifact.
+- MEDIUM: D1 is implemented too broadly for invalid original datasets. `_resample_deltas` returns all-zero deltas when the original `y` has only positives or only negatives, silently treating an invalid evaluation set as “equivalent” (`src/adaptive_compute/bootstrap.py`). D1 only calls for degenerate bootstrap resamples from otherwise valid data to map to `Δ*=0`; the original input should still require both classes.
 
-**MEDIUM** `src/adaptive_compute/benchmark.py`: `DEFAULT_N_TEST = 500` does not satisfy the plan’s stated “CI half-width ≤ 0.01 at the tolerance” requirement. Around a 0.05 false-stop rate, a 95% Wilson interval with n=500 has roughly double that half-width. Either increase `N_test` or revise the stated precision contract.
+- LOW: The H1 CI gate uses strict `< DEFAULT_ALPHA` while the acceptance criterion says upper CI `≤ α` (`src/adaptive_compute/benchmark.py`). This only matters at the exact boundary, but the artifact wording also says `< alpha`, so it is worth aligning.
 
-Codex verdict: REQUEST CHANGES
+No CRITICAL/HIGH blockers found.
+
+Codex verdict: APPROVE
