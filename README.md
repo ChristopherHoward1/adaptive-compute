@@ -1,41 +1,51 @@
 # Adaptive Compute
 
-Monte-Carlo evaluation procedures usually run for a fixed number of draws —
-"1000 bootstrap resamples" — chosen by convention rather than by what the
-decision needs. When the answer is lopsided, most of those draws are wasted;
-when it is close, the fixed budget may be too small to resolve it. This project
-asks whether a procedure can instead stop once more draws are unlikely to change
-the decision, with a stated bound on how often it disagrees with the full-budget
-answer.
+Monte Carlo evaluation often runs for a fixed simulation budget: a set number of
+bootstrap resamples or permutations. How many draws it takes to resolve the
+downstream decision varies from case to case, so a fixed budget can spend more
+draws than an easy decision needs and fewer than a hard one requires. This
+project tests whether a procedure can instead stop once further draws are
+unlikely to change the decision, while bounding how often it disagrees with a
+large fixed-budget reference.
 
 ## Research question
 
-Can we stop a Monte-Carlo procedure once additional draws are unlikely to change
+Can we stop a Monte Carlo procedure once additional draws are unlikely to change
 the decision?
 
-Made precise: for an iterative Monte-Carlo procedure on a fixed dataset, can an
-adaptive stopping rule reach the same decision as a large fixed-budget run using
-materially fewer draws, while keeping the probability of a different decision
-below a preset bound α? "Materially fewer" is preregistered as a ≥2× median-draw
-reduction, and it must hold in every difficulty stratum, not just on average.
+Made precise: for an iterative Monte Carlo procedure on a fixed dataset, can an
+adaptive stopping rule reach the same decision as a large fixed-budget reference
+run using materially fewer draws, while keeping the probability of a different
+decision below a bound α (here 0.05) in every difficulty stratum? The experiment
+design fixes "materially fewer" in advance as a median-draw reduction of at least
+2×, required in each stratum rather than on average.
 
-The decision under test is an equivalence-band model comparison: given a margin
-δ, is candidate model A better than reference model B by more than δ, worse by
-more than δ, or practically equivalent, on a fixed evaluation set?
+The decision under test is an equivalence-band comparison of two models on a
+fixed evaluation set. Given a margin δ, the procedure returns one of:
 
-## What counts as compute
+- **A better than B** — the resolved interval for the metric difference lies above +δ;
+- **B better than A** — it lies below −δ;
+- **equivalent** — it lies within [−δ, +δ];
+- **abstain** — the budget is exhausted before the interval resolves.
 
-Compute is counted in Monte-Carlo draws (a bootstrap resample, a permutation,
-later a sampled attribution coalition), not wall-clock time, so a reported saving
-does not depend on the hardware.
+## Compute and stopping
 
-The dataset stays fixed; only the Monte-Carlo budget grows. The target is the
-decision the same procedure would reach with infinite draws on that exact data.
-This is not sequential analysis: we never add data to learn about an unknown
-population, so the validity of any interval is untouched by stopping. What
-stopping can bias is the decision. A rule that halts the first time a running
-band clears δ stops preferentially on paths that happened to wander across it, so
-the band must be anytime-valid — safe to inspect after every batch.
+Compute is measured in Monte Carlo draws (a bootstrap resample, later a
+permutation or sampled attribution coalition), not wall-clock time.
+
+The evaluation dataset stays fixed; only the number of simulation draws grows.
+The sequential randomness comes from the simulation, not from collecting new
+observations, so this differs from sequential sampling of a population: any
+interval about the population is as valid as the underlying method, and stopping
+does not touch it. The stopping time does depend on the simulated path, though. A
+rule that halts the first time a running band clears δ stops preferentially on
+paths that happened to wander across it, and a fixed-time interval's coverage is
+guaranteed only at a preset number of draws, not at a data-dependent stopping
+time. The rule therefore uses an anytime-valid confidence sequence, whose
+coverage holds simultaneously at every budget and so survives optional stopping.
+The target is the decision the same procedure would reach with unlimited draws on
+that exact data; for the synthetic cases that decision is known by construction,
+and the fixed-budget reference run recovers it.
 
 ## Documentation
 
@@ -51,34 +61,40 @@ the band must be anytime-valid — safe to inspect after every batch.
 
 The first experiment does not support H1.
 
-The adaptive procedure matched the full-budget reference decision on every
-non-boundary case in the test battery, including the heavy-tailed condition. The
-false-stop rate was 0 in every difficulty stratum (upper 95% CI below α = 0.05),
-and it abstained on none of them.
+Decision agreement held. On every scored non-boundary case in the battery the
+adaptive procedure resolved and returned the reference decision. The false-stop
+rate was 0 in each difficulty stratum (Wilson upper 95% bound below α = 0.05),
+including the heavy-tailed cases, and the procedure never abstained.
 
-It did not save draws. H1 requires a ≥2× median-draw reduction in every
-non-boundary stratum, achieved against a fixed budget the adaptive rule
-Pareto-dominates. The easy stratum clears this (2.5×), but the two strata that
-decide the criterion do not: in the `equivalent` and `moderate` strata no fixed
-budget in the sweep is dominated at any saving. A plain fixed budget reaches the
-same decisions with fewer draws than the adaptive rule's median of 768 and 448
-draws respectively. The procedure is reliable but more expensive than the
-baseline it must beat.
+Compute savings did not. H1 asks the adaptive rule to use at least 2× fewer draws
+than a fixed budget that reaches the same decisions at least as reliably, and to
+do so in every stratum. It met this in none of them:
 
-Details in [`PLAN.md`](PLAN.md).
+- **easy and equivalent strata** — a fixed budget as small as 32 resamples
+  reached the same decisions with the same reliability, while the adaptive rule
+  used a median of 128 draws (easy) and 768 (equivalent).
+- **moderate stratum** — the adaptive rule was more reliable than every fixed
+  budget in the sweep {32, 64, 128, 320}, but used more draws than all of them
+  (median 448), so no equally reliable fixed budget was expensive enough for it to
+  beat by 2×.
+
+The procedure agreed with the reference throughout but did not save draws against
+the fixed-budget sweep. Details in [`PLAN.md`](PLAN.md).
 
 ## What's next
 
-Stopping time depends heavily on the width of the confidence band. The band used
-here is a finite-horizon empirical-Bernstein confidence sequence (following
-Howard et al. 2021), capped at a maximum budget of `B_max = 2048` draws. Its
-bands are loose at the budgets tested, which is what pushes the draw count above
-the fixed-budget grid. The negative result is therefore specific to this
-instrument, not to adaptive stopping in general.
+The stopping rule uses a finite-horizon empirical-Bernstein confidence sequence
+for the bounded mean difference, following Howard et al. (2021), with a tuned
+draw cap of `B_max = 2048`. At the budgets where a fixed-budget bootstrap already
+resolves these cases, this band's half-width stays wider than δ, so an
+equivalence decision in particular cannot resolve until many more draws
+accumulate. This experiment evaluates that one stopping rule; it does not
+establish that adaptive stopping is generally compute-inefficient.
 
-The next experiment replaces it with a tighter betting confidence sequence
-(Waudby-Smith & Ramdas, 2024) and evaluates the same decision, battery, and ≥2×
-criterion. Whether a tighter band materially reduces stopping time is the open
+The next experiment replaces the band with a betting confidence sequence
+(Waudby-Smith & Ramdas, 2024), which the literature reports as tighter for
+bounded variables, and holds the decision task, battery, and 2× criterion fixed.
+Whether tighter finite-budget bands translate into earlier stopping is the open
 question.
 
 ## The code
@@ -102,8 +118,7 @@ python -m adaptive_compute.eval --check   # fast decision check
 python -m adaptive_compute.eval --run     # offline benchmark, writes results.{md,json}
 ```
 
-Every run is reproducible from its generator parameters and seed; the harness
-records both.
+Every run is reproducible from its generator parameters and seed.
 
 ## License
 
