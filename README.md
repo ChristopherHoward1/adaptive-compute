@@ -14,29 +14,35 @@ releases it.
 > large fixed budget, while keeping the probability of reaching a *different
 > decision than the full-budget procedure* below a pre-set bound?
 
-The unit of compute is the **Monte-Carlo draw** (a bootstrap resample, a
-permutation, later a sampled attribution coalition), not wall-clock time, so
-"compute saved" is hardware-independent by construction. Crucially this is
-adaptive *simulation budget on fixed data* — the estimand is the B→∞ value on
-this exact dataset — **not** adaptive *sample size* / sequential analysis, where
-the estimand is an unknown population. See [`docs/research-definition.md`](docs/research-definition.md)
-for the full framing, [`docs/prior-art.md`](docs/prior-art.md) for where the
-novelty sits (an application + empirical result over Gandy (2009) and anytime-valid
-confidence sequences), and [`docs/experiment-design.md`](docs/experiment-design.md)
-for the first experiment.
+We count compute in **Monte-Carlo draws** (a bootstrap resample, a permutation,
+later a sampled attribution coalition), not wall-clock time — so "compute saved"
+doesn't depend on the hardware. One distinction matters throughout: we grow the
+*simulation budget* on a **fixed** dataset (the target is the answer you'd get
+with infinite draws on that exact data). We are **not** growing the *sample size*
+to learn about an unknown population — that's sequential analysis, a different
+and much-studied problem we deliberately stay out of.
+
+Read the docs in this order:
+
+- [`docs/research-definition.md`](docs/research-definition.md) — the question, the hypotheses, and every way the idea could be fooling us.
+- [`docs/prior-art.md`](docs/prior-art.md) — what's already solved (the stopping guarantee isn't ours to invent) and the narrow empirical residual that is.
+- [`docs/experiment-design.md`](docs/experiment-design.md) — the first experiment, built to *falsify* the claim.
 
 ### Current result (v2026.9.3)
 
-The first end-to-end result is a **genuine H1 negative**: the blind adaptive
-controller (an anytime-valid empirical-Bernstein confidence sequence on the
-bounded mean `E*[Δ*]`) achieves a **zero false-stop rate in every non-boundary
-stratum** of the synthetic battery — but **fails the ≥2× savings gate**, because
-its median draws exceed the whole fixed-B grid. The negative is
-**instrument-specific**, resting on the finite-horizon EB boundary's looseness
-and `B_max=2048`; the queued next step is to re-test with a tighter betting
-confidence sequence (Waudby-Smith–Ramdas) before any general "adaptivity doesn't
-save compute" claim. Details in [`work/adaptive-procedure/`](work/adaptive-procedure/)
-and [`PLAN.md`](PLAN.md).
+The first end-to-end result is a **genuine H1 negative** — and an honest one, not
+a bug. The adaptive controller is **safe**: it reaches the full-budget answer on
+every non-boundary case (zero false stops across the battery, heavy tails
+included). But it is **not cheap**: its median draw count is higher than the
+whole fixed-budget grid it's competing against, so it misses the ≥2× savings bar.
+
+The catch is that this negative is **specific to the instrument we used** (an
+empirical-Bernstein confidence sequence, capped at `B_max=2048`), whose bands are
+loose at finite budgets. A tighter instrument — a betting confidence sequence
+(Waudby-Smith–Ramdas) — could resolve far sooner and flip the savings verdict, so
+we hold off on any general "adaptivity doesn't save compute" claim until that
+re-test. Details in [`work/adaptive-procedure/`](work/adaptive-procedure/) and
+[`PLAN.md`](PLAN.md).
 
 ## The research code
 

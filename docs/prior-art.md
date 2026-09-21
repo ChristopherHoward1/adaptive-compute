@@ -9,6 +9,16 @@ we are confident of; exact DOIs and URLs should be re-verified against a primary
 source before any are quoted in an external write-up. Where we are less certain of
 a detail it is marked *(verify)*.
 
+**In plain terms.** The idea of stopping Monte-Carlo resampling early, with error
+control, is not new — Besag & Clifford (1991) and Gandy (2009) already did it for
+a one-sided p-value test, and the confidence-sequence literature gives us bands
+that are safe to peek at repeatedly. So we are *not* inventing a stopping method.
+What's left for us is narrow and empirical: carry those guarantees to a two-sided
+*equivalence-band* model comparison and measure how much compute it actually
+saves without failing on hard cases. The sections below map each neighbouring
+result to the exact slice of our problem it already covers, so we don't
+re-discover it and call it ours.
+
 ---
 
 ## The near-exact ancestors (v0 is an application of these)
