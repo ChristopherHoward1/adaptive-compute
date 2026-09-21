@@ -93,7 +93,7 @@ bound.
 This resolves smaller than the EB band because it spends evidence through a
 data-adaptive martingale rather than carrying EB's finite-horizon linear term at
 every look. In the `work/betting-cs-retest` A/B, betting tuned `B_max = 512` with
-the shared `b = 64` and reduced held-out median draws from EB's `128/704/384`
+the shared `b = 64` and reduced held-out median draws from EB's `128/768/448`
 (`easy/equivalent/moderate`) to `64/192/128`. The recorded verdict did **not** flip:
 both arms passed the false-stop test, but betting's `savings_pareto_pass` remained
 false because the equivalent stratum still had fixed-B dominators under the shared
