@@ -4,11 +4,12 @@ from __future__ import annotations
 
 import argparse
 import sys
+from pathlib import Path
 
 import numpy as np
 
 from adaptive_compute.adaptive import adaptive_decision
-from adaptive_compute.benchmark import run_and_write_results
+from adaptive_compute.benchmark import run_and_write_results, run_benchmark, write_results
 from adaptive_compute.bootstrap import adaptive_bootstrap_stream, paired_bootstrap_deltas
 from adaptive_compute.generators import BATTERY, generate
 from adaptive_compute.metrics import delta
@@ -26,6 +27,7 @@ CHECK_MCSE_REPLICATIONS = 8
 CHECK_MCSE_RHO = 0.1
 CHECK_ADAPTIVE_BATCH = 64
 CHECK_ADAPTIVE_B_MAX = 1024
+COMPARE_DIR = Path("work/betting-cs-retest")
 
 
 def _hard_member_mcse(member: str, replications: int = 6) -> float:
@@ -168,6 +170,36 @@ def _check() -> int:
         + adaptive_ss_second.draws_consumed
     )
 
+    betting_first = adaptive_decision(
+        easy_scores_a,
+        easy_scores_b,
+        easy_y,
+        margin=DEFAULT_DELTA,
+        alpha=DEFAULT_ALPHA,
+        b=CHECK_ADAPTIVE_BATCH,
+        b_max=CHECK_ADAPTIVE_B_MAX,
+        seed=12345,
+        instrument="betting",
+    )
+    betting_second = adaptive_decision(
+        easy_scores_a,
+        easy_scores_b,
+        easy_y,
+        margin=DEFAULT_DELTA,
+        alpha=DEFAULT_ALPHA,
+        b=CHECK_ADAPTIVE_BATCH,
+        b_max=CHECK_ADAPTIVE_B_MAX,
+        seed=12345,
+        instrument="betting",
+    )
+    if betting_first != betting_second:
+        print("betting adaptive int-seed determinism failed", file=sys.stderr)
+        return 1
+    if betting_first.decision == "abstain" or betting_first.draws_consumed >= CHECK_ADAPTIVE_B_MAX:
+        print("betting adaptive did not resolve easy_lopsided before B_max", file=sys.stderr)
+        return 1
+    total_draws += betting_first.draws_consumed + betting_second.draws_consumed
+
     flat_scores = np.array([0.0, 0.1, 0.2, 0.3])
     flat_y = np.array([0, 0, 1, 1])
     abstain = adaptive_decision(
@@ -248,17 +280,65 @@ def _run() -> int:
     return 0
 
 
+def _compare() -> int:
+    eb = run_benchmark(instrument="eb")
+    betting = run_benchmark(instrument="betting")
+    write_results(
+        eb,
+        md_path=COMPARE_DIR / "results-eb.md",
+        json_path=COMPARE_DIR / "results-eb.json",
+    )
+    write_results(
+        betting,
+        md_path=COMPARE_DIR / "results-betting.md",
+        json_path=COMPARE_DIR / "results-betting.json",
+    )
+    flipped = (
+        not eb.savings_pareto_pass and betting.savings_pareto_pass and betting.false_stop_test_pass
+    )
+    headline = "YES" if flipped else "NO"
+    lines = [
+        "# Betting-CS Re-test Comparison",
+        "",
+        (
+            "Headline verdict: "
+            f"**{headline}** — betting savings_pareto_pass "
+            f"{'flipped to true' if flipped else 'did not flip to true while preserving §7'}."
+        ),
+        "",
+        "| arm | false_stop_test_pass | savings_pareto_pass | h1_holds | b | B_max |",
+        "| --- | ---: | ---: | ---: | ---: | ---: |",
+        (
+            f"| EB | {eb.false_stop_test_pass} | {eb.savings_pareto_pass} | "
+            f"{eb.h1_holds} | {eb.tuned_params.b} | {eb.tuned_params.b_max} |"
+        ),
+        (
+            f"| Betting | {betting.false_stop_test_pass} | {betting.savings_pareto_pass} | "
+            f"{betting.h1_holds} | {betting.tuned_params.b} | {betting.tuned_params.b_max} |"
+        ),
+        "",
+        "Both arms use the shared fixed-B grid and fixed adaptive batch size b=64.",
+    ]
+    COMPARE_DIR.mkdir(parents=True, exist_ok=True)
+    (COMPARE_DIR / "comparison.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    print(f"eval compare wrote results; betting savings flip: {headline}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--check", action="store_true", help="run the seeded self-consistency check"
     )
     parser.add_argument("--run", action="store_true", help="run the offline benchmark")
+    parser.add_argument("--compare", action="store_true", help="run EB and betting A/B benchmark")
     args = parser.parse_args(argv)
     if args.check:
         return _check()
     if args.run:
         return _run()
+    if args.compare:
+        return _compare()
     parser.print_help()
     return 0
 

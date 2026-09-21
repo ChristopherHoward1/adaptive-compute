@@ -16,9 +16,11 @@ from typing import Literal
 import numpy as np
 from numpy.typing import ArrayLike
 
+from adaptive_compute.betting import betting_cs_bounds
 from adaptive_compute.bootstrap import adaptive_bootstrap_stream
 
 AdaptiveDecision = Literal["A_better", "B_better", "equivalent", "abstain"]
+AdaptiveInstrument = Literal["eb", "betting"]
 
 
 @dataclass(frozen=True)
@@ -86,6 +88,7 @@ def adaptive_decision(
     b: int,
     b_max: int,
     seed: int | np.random.SeedSequence,
+    instrument: AdaptiveInstrument = "eb",
 ) -> AdaptiveResult:
     """Run the blind adaptive procedure."""
 
@@ -100,6 +103,9 @@ def adaptive_decision(
         raise ValueError(msg)
     if b_max <= 0:
         msg = "b_max must be positive"
+        raise ValueError(msg)
+    if instrument not in ("eb", "betting"):
+        msg = "instrument must be 'eb' or 'betting'"
         raise ValueError(msg)
 
     stream = adaptive_bootstrap_stream(
@@ -124,7 +130,10 @@ def adaptive_decision(
         values[draws : draws + current] = batch_values[:current]
         draws += current
         batches += 1
-        bounds = empirical_bernstein_bounds(values[:draws], alpha=alpha, max_looks=max_looks)
+        if instrument == "eb":
+            bounds = empirical_bernstein_bounds(values[:draws], alpha=alpha, max_looks=max_looks)
+        else:
+            bounds = betting_cs_bounds(values[:draws], alpha=alpha)
         decision = decision_from_bounds(bounds[0], bounds[1], margin=margin)
         if decision is not None:
             return AdaptiveResult(

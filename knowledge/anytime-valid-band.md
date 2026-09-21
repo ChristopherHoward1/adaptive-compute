@@ -68,5 +68,33 @@ that budget regardless of variance. The reference's percentile interval resolves
 Monte-Carlo error below δ, which takes many more draws. Pick `B_max` on the tune
 split from candidates large enough for the boundary to resolve non-boundary
 low-variance cases, and expect it to exceed `B_ref` substantially. (A tighter
-anytime-valid instrument — a Waudby-Smith–Ramdas betting CS — would resolve at far
-smaller budgets; the v0 EB negative is specific to this boundary's looseness.)
+anytime-valid instrument can resolve at far smaller budgets, but it still has to be
+scored against the same fixed-B Pareto gate.)
+
+## Betting CS (WSR)
+
+The betting re-test adds a Waudby-Smith--Ramdas hedged-capital confidence sequence
+as a selectable instrument. Each bootstrap draw `Delta* ∈ [-1, 1]` is rescaled to
+`X = (Delta* + 1) / 2 ∈ [0, 1]`, the CS is built for `mu_X`, and the reported
+interval is mapped back to Delta-space with `2 * [l, u] - 1`.
+
+For a grid of candidate means `m ∈ [0, 1]`, the implementation maintains
+`K_t(m) = 0.5 * (K_t^+(m) + K_t^-(m))`, where
+`K_t^±(m) = product_i (1 ± lambda_i(m)(X_i - m))`. The betting fraction is the
+approx-GRAPA plug-in
+`abs(mean_{<i} - m) / (var_{<i} + (mean_{<i} - m)^2)`, truncated to
+`[0, c / max(m, 1 - m)]` with `c = 0.5`. The first two draws use `lambda = 0`
+because the plug-in is based only on past data. The CS keeps exactly those grid
+points whose running maximum capital has not crossed `1 / alpha`:
+`max_{s <= t} K_s(m) < 1 / alpha`. Predictability of `lambda_i` and the running
+maximum are the load-bearing validity mechanics; there is no `max_looks` union
+bound.
+
+This resolves smaller than the EB band because it spends evidence through a
+data-adaptive martingale rather than carrying EB's finite-horizon linear term at
+every look. In the `work/betting-cs-retest` A/B, betting tuned `B_max = 512` with
+the shared `b = 64` and reduced held-out median draws from EB's `128/704/384`
+(`easy/equivalent/moderate`) to `64/192/128`. The recorded verdict did **not** flip:
+both arms passed the false-stop test, but betting's `savings_pareto_pass` remained
+false because the equivalent stratum still had fixed-B dominators under the shared
+fixed-B grid.

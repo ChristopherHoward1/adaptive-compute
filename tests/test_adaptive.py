@@ -23,7 +23,9 @@ def test_public_entry_is_blind() -> None:
         "b",
         "b_max",
         "seed",
+        "instrument",
     )
+    assert signature.parameters["instrument"].default == "eb"
     assert "b_ref" not in signature.parameters
     assert "reference_decision" not in signature.parameters
     assert "plugin_delta" not in signature.parameters

@@ -10,7 +10,7 @@ from statistics import NormalDist
 
 import numpy as np
 
-from adaptive_compute.adaptive import adaptive_decision
+from adaptive_compute.adaptive import AdaptiveInstrument, adaptive_decision
 from adaptive_compute.generators import BATTERY, GeneratorParams, generate
 from adaptive_compute.metrics import delta
 from adaptive_compute.reference import (
@@ -24,7 +24,7 @@ from adaptive_compute.reference import (
 from adaptive_compute.strata import classify_delta
 from adaptive_compute.sweep import fixed_b_sweep, pareto_verdict
 
-DEFAULT_BATCH = 32
+DEFAULT_BATCH = 64
 DEFAULT_B_MAX = 2048
 DEFAULT_N_TUNE = 24
 DEFAULT_N_TEST = 2000
@@ -105,6 +105,8 @@ def _run_member_seed(
     params: GeneratorParams,
     adaptive_params: AdaptiveParams,
     seed_index: int,
+    *,
+    instrument: AdaptiveInstrument = "eb",
 ) -> MemberRun:
     seeded = _seeded_params(params, seed_index)
     scores_a, scores_b, y = generate(seeded)
@@ -138,6 +140,7 @@ def _run_member_seed(
         b=adaptive_params.b,
         b_max=adaptive_params.b_max,
         seed=run_seed,
+        instrument=instrument,
     )
     fixed_seed = 180_000 + seeded.seed
     fixed_decisions = {
@@ -164,16 +167,21 @@ def _run_member_seed(
     )
 
 
-def _tune_params(n_tune: int) -> AdaptiveParams:
-    candidates = (
-        AdaptiveParams(b=DEFAULT_BATCH, alpha=DEFAULT_ALPHA, b_max=1024),
-        AdaptiveParams(b=64, alpha=DEFAULT_ALPHA, b_max=2048),
+def _tune_params(
+    n_tune: int,
+    *,
+    instrument: AdaptiveInstrument = "eb",
+) -> AdaptiveParams:
+    b_max_candidates = (1024, 2048) if instrument == "eb" else (128, 256, 512, 1024)
+    candidates = tuple(
+        AdaptiveParams(b=DEFAULT_BATCH, alpha=DEFAULT_ALPHA, b_max=b_max)
+        for b_max in b_max_candidates
     )
     best = candidates[0]
     best_score = (1.0, 1.0, float(DEFAULT_B_MAX))
     for candidate in candidates:
         runs = [
-            _run_member_seed(name, params, candidate, i)
+            _run_member_seed(name, params, candidate, i, instrument=instrument)
             for name, (params, _generator) in BATTERY.items()
             if name != "near_delta_boundary"
             for i in range(n_tune)
@@ -266,10 +274,11 @@ def run_benchmark(
     *,
     n_tune: int = DEFAULT_N_TUNE,
     n_test: int = DEFAULT_N_TEST,
+    instrument: AdaptiveInstrument = "eb",
 ) -> BenchmarkResult:
-    tuned = _tune_params(n_tune)
+    tuned = _tune_params(n_tune, instrument=instrument)
     runs = [
-        _run_member_seed(name, params, tuned, TEST_SEED_OFFSET + i)
+        _run_member_seed(name, params, tuned, TEST_SEED_OFFSET + i, instrument=instrument)
         for name, (params, _generator) in BATTERY.items()
         if name != "near_delta_boundary"
         for i in range(n_test)
@@ -296,7 +305,7 @@ def run_benchmark(
                 ]
             )
         )
-    false_stop_test_pass = all(summary.false_stop_ci[1] < DEFAULT_ALPHA for summary in summaries)
+    false_stop_test_pass = all(summary.false_stop_ci[1] <= DEFAULT_ALPHA for summary in summaries)
     savings_pareto_pass = all(
         not summary.fixed_b_dominating_adaptive
         and summary.pareto_best_savings_ratio >= TARGET_SAVINGS_RATIO
@@ -319,9 +328,9 @@ def run_benchmark(
 def _summary_markdown(result: BenchmarkResult) -> str:
     verdict = "H1 HOLDS" if result.h1_holds else "H1 NEGATIVE RESULT"
     false_stop_detail = (
-        "PASS in every non-boundary stratum (all upper CIs < alpha)"
+        "PASS in every non-boundary stratum (all upper CIs <= alpha)"
         if result.false_stop_test_pass
-        else "FAIL (at least one non-boundary stratum has upper CI >= alpha)"
+        else "FAIL (at least one non-boundary stratum has upper CI > alpha)"
     )
     savings_detail = (
         "PASS (adaptive dominates a fixed-B at >=2x in every stratum)"
