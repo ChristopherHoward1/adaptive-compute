@@ -16,7 +16,7 @@ from typing import Literal
 import numpy as np
 from numpy.typing import ArrayLike
 
-from adaptive_compute.betting import betting_cs_bounds
+from adaptive_compute.betting import BettingCSState, _mean_grid
 from adaptive_compute.bootstrap import adaptive_bootstrap_stream
 
 AdaptiveDecision = Literal["A_better", "B_better", "equivalent", "abstain"]
@@ -121,6 +121,7 @@ def adaptive_decision(
     batches = 0
     bounds = (-1.0, 1.0)
     max_looks = ceil(b_max / b)
+    betting_state = BettingCSState(grid=_mean_grid(401)) if instrument == "betting" else None
 
     while draws < b_max:
         batch = next(stream)
@@ -133,7 +134,9 @@ def adaptive_decision(
         if instrument == "eb":
             bounds = empirical_bernstein_bounds(values[:draws], alpha=alpha, max_looks=max_looks)
         else:
-            bounds = betting_cs_bounds(values[:draws], alpha=alpha)
+            assert betting_state is not None
+            betting_state.update_delta(batch_values[:current])
+            bounds = betting_state.bounds(alpha=alpha)
         decision = decision_from_bounds(bounds[0], bounds[1], margin=margin)
         if decision is not None:
             return AdaptiveResult(

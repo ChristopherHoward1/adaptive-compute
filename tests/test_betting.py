@@ -1,7 +1,11 @@
 import numpy as np
 import pytest
 
-from adaptive_compute.adaptive import adaptive_decision, empirical_bernstein_bounds
+from adaptive_compute.adaptive import (
+    adaptive_decision,
+    decision_from_bounds,
+    empirical_bernstein_bounds,
+)
 from adaptive_compute.betting import (
     _mean_grid,
     _running_max_hedged_capital,
@@ -37,13 +41,15 @@ def test_predictable_bound_ignores_future_suffix_changes() -> None:
     prefix = np.array([-0.04, 0.02, 0.01, -0.03, 0.00, 0.03] * 12)
     future_a = np.linspace(-1.0, 1.0, 64)
     future_b = future_a[::-1] * 0.25
-    first = np.concatenate([prefix, future_a])
-    second = np.concatenate([prefix, future_b])
+    first = (np.concatenate([prefix, future_a]) + 1.0) / 2.0
+    second = (np.concatenate([prefix, future_b]) + 1.0) / 2.0
+    prefix_x = (prefix + 1.0) / 2.0
 
-    assert betting_cs_bounds(first[: prefix.size], alpha=DEFAULT_ALPHA) == betting_cs_bounds(
-        second[: prefix.size],
-        alpha=DEFAULT_ALPHA,
-    )
+    assert not np.array_equal(future_a, future_b)
+    for mean in (0.25, 0.5, 0.75):
+        prefix_path = hedged_capital_path(prefix_x, m=mean)
+        assert np.array_equal(hedged_capital_path(first, m=mean)[: prefix.size], prefix_path)
+        assert np.array_equal(hedged_capital_path(second, m=mean)[: prefix.size], prefix_path)
 
 
 def test_capital_sanity_under_centered_null_stream() -> None:
@@ -110,28 +116,37 @@ def test_drop_in_stream_equivalence_for_fixed_batch_prefix() -> None:
         seed=seed,
         instrument="betting",
     )
-    prefix_draws = min(eb.draws_consumed, betting.draws_consumed)
-
-    first_stream = adaptive_bootstrap_stream(
+    replay_stream = adaptive_bootstrap_stream(
         scores_a,
         scores_b,
         y,
         batch_draws=64,
-        max_draws=prefix_draws,
+        max_draws=2048,
         seed=seed,
     )
-    second_stream = adaptive_bootstrap_stream(
-        scores_a,
-        scores_b,
-        y,
-        batch_draws=64,
-        max_draws=prefix_draws,
-        seed=seed,
-    )
-    first = np.concatenate([batch.deltas for batch in first_stream])
-    second = np.concatenate([batch.deltas for batch in second_stream])
+    replayed = np.concatenate([batch.deltas for batch in replay_stream])
 
-    assert np.array_equal(first, second)
+    eb_consumed = _replay_consumed_deltas(replayed, instrument="eb", b=64, b_max=2048)
+    betting_consumed = _replay_consumed_deltas(
+        replayed,
+        instrument="betting",
+        b=64,
+        b_max=2048,
+    )
+    matched_prefix = min(eb_consumed.size, betting_consumed.size)
+
+    assert np.array_equal(
+        eb_consumed[:matched_prefix],
+        betting_consumed[:matched_prefix],
+    )
+    assert _replay_decision(replayed, instrument="eb", b=64, b_max=2048) == (
+        eb.decision,
+        eb.draws_consumed,
+    )
+    assert _replay_decision(replayed, instrument="betting", b=64, b_max=2048) == (
+        betting.decision,
+        betting.draws_consumed,
+    )
 
 
 def test_betting_resolves_equivalent_case_faster_than_eb() -> None:
@@ -165,3 +180,38 @@ def test_betting_resolves_equivalent_case_faster_than_eb() -> None:
     assert eb.decision == "equivalent"
     assert betting.decision == "equivalent"
     assert betting.draws_consumed < eb.draws_consumed
+
+
+def _replay_decision(
+    deltas: np.ndarray,
+    *,
+    instrument: str,
+    b: int,
+    b_max: int,
+) -> tuple[str, int]:
+    max_looks = int(np.ceil(b_max / b))
+    for draws in range(b, b_max + b, b):
+        prefix = deltas[:draws]
+        if instrument == "eb":
+            bounds = empirical_bernstein_bounds(
+                prefix,
+                alpha=DEFAULT_ALPHA,
+                max_looks=max_looks,
+            )
+        else:
+            bounds = betting_cs_bounds(prefix, alpha=DEFAULT_ALPHA)
+        decision = decision_from_bounds(bounds[0], bounds[1], margin=DEFAULT_DELTA)
+        if decision is not None:
+            return decision, draws
+    return "abstain", b_max
+
+
+def _replay_consumed_deltas(
+    deltas: np.ndarray,
+    *,
+    instrument: str,
+    b: int,
+    b_max: int,
+) -> np.ndarray:
+    _decision, draws = _replay_decision(deltas, instrument=instrument, b=b, b_max=b_max)
+    return deltas[:draws]

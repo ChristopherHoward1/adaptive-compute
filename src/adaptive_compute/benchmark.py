@@ -172,7 +172,7 @@ def _tune_params(
     *,
     instrument: AdaptiveInstrument = "eb",
 ) -> AdaptiveParams:
-    b_max_candidates = (1024, 2048) if instrument == "eb" else (128, 256, 512, 1024)
+    b_max_candidates = (2048,) if instrument == "eb" else (128, 256, 512, 1024)
     candidates = tuple(
         AdaptiveParams(b=DEFAULT_BATCH, alpha=DEFAULT_ALPHA, b_max=b_max)
         for b_max in b_max_candidates

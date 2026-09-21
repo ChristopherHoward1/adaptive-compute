@@ -297,14 +297,16 @@ def _compare() -> int:
         not eb.savings_pareto_pass and betting.savings_pareto_pass and betting.false_stop_test_pass
     )
     headline = "YES" if flipped else "NO"
+    if flipped:
+        headline_detail = "flipped to true while preserving §7"
+    elif betting.false_stop_test_pass:
+        headline_detail = "did not flip because savings still failed (§7 held)"
+    else:
+        headline_detail = "did not flip because §7 failed"
     lines = [
         "# Betting-CS Re-test Comparison",
         "",
-        (
-            "Headline verdict: "
-            f"**{headline}** — betting savings_pareto_pass "
-            f"{'flipped to true' if flipped else 'did not flip to true while preserving §7'}."
-        ),
+        (f"Headline verdict: **{headline}** — betting savings_pareto_pass {headline_detail}."),
         "",
         "| arm | false_stop_test_pass | savings_pareto_pass | h1_holds | b | B_max |",
         "| --- | ---: | ---: | ---: | ---: | ---: |",

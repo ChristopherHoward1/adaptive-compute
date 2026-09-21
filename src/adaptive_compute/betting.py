@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
 
@@ -96,16 +98,83 @@ def betting_cs_bounds(
         msg = "values must lie in [-1, 1]"
         raise ValueError(msg)
 
-    samples = (samples_delta + 1.0) / 2.0
-    grid = _mean_grid(grid_size)
-    max_capital = _running_max_hedged_capital(samples, grid=grid, c=c)
-    survivors = grid[max_capital < 1.0 / alpha]
-    if survivors.size == 0:
-        return -1.0, 1.0
+    state = BettingCSState(grid=_mean_grid(grid_size), c=c)
+    state.update_delta(samples_delta)
+    return state.bounds(alpha=alpha)
 
-    lower = float(2.0 * survivors[0] - 1.0)
-    upper = float(2.0 * survivors[-1] - 1.0)
-    return max(-1.0, lower), min(1.0, upper)
+
+@dataclass
+class BettingCSState:
+    grid: NDArray[np.float64]
+    c: float = 0.5
+
+    def __post_init__(self) -> None:
+        if self.grid.ndim != 1 or self.grid.size == 0:
+            msg = "grid must be a non-empty one-dimensional array"
+            raise ValueError(msg)
+        if np.any(self.grid < 0.0) or np.any(self.grid > 1.0):
+            msg = "grid must lie in [0, 1]"
+            raise ValueError(msg)
+        if not 0.0 < self.c < 1.0:
+            msg = "c must be between 0 and 1"
+            raise ValueError(msg)
+        self.capital_plus = np.ones(self.grid.size, dtype=np.float64)
+        self.capital_minus = np.ones(self.grid.size, dtype=np.float64)
+        self.max_capital = np.ones(self.grid.size, dtype=np.float64)
+        self.past_mean = 0.5
+        self.m2 = 0.0
+        self.count = 0
+
+    def update_delta(self, values: ArrayLike) -> None:
+        samples_delta = np.asarray(values, dtype=np.float64)
+        if samples_delta.ndim != 1 or samples_delta.size == 0:
+            msg = "values must be a non-empty one-dimensional array"
+            raise ValueError(msg)
+        if np.any(samples_delta < -1.0) or np.any(samples_delta > 1.0):
+            msg = "values must lie in [-1, 1]"
+            raise ValueError(msg)
+        self.update_x((samples_delta + 1.0) / 2.0)
+
+    def update_x(self, samples: NDArray[np.float64]) -> None:
+        for sample in samples:
+            if self.count < 2:
+                lambdas = np.zeros(self.grid.size, dtype=np.float64)
+            else:
+                past_variance = max(self.m2 / (self.count - 1), 1e-6)
+                lambdas = _lambda_grid(
+                    grid=self.grid,
+                    past_mean=self.past_mean,
+                    past_variance=past_variance,
+                    c=self.c,
+                )
+            centered = sample - self.grid
+            self.capital_plus *= 1.0 + lambdas * centered
+            self.capital_minus *= 1.0 - lambdas * centered
+            self.max_capital = np.maximum(
+                self.max_capital,
+                0.5 * (self.capital_plus + self.capital_minus),
+            )
+
+            self.count += 1
+            delta = sample - self.past_mean
+            self.past_mean += delta / self.count
+            self.m2 += delta * (sample - self.past_mean)
+
+    def bounds(self, *, alpha: float) -> tuple[float, float]:
+        if not 0.0 < alpha < 1.0:
+            msg = "alpha must be between 0 and 1"
+            raise ValueError(msg)
+        survivors = self.grid[self.max_capital < 1.0 / alpha]
+        if survivors.size == 0:
+            return -1.0, 1.0
+
+        # ponytail: this interval is the convex hull of surviving grid means,
+        # valid exactly at grid points and conservative in practice with the
+        # 401-point grid. If a future unit needs arbitrary non-grid means,
+        # upgrade to continuous inversion or pad by one grid cell.
+        lower = float(2.0 * survivors[0] - 1.0)
+        upper = float(2.0 * survivors[-1] - 1.0)
+        return max(-1.0, lower), min(1.0, upper)
 
 
 def _running_max_hedged_capital(
