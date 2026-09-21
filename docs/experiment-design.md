@@ -10,6 +10,17 @@ The experiment compares an **adaptive** Monte-Carlo stopping procedure against a
 more than δ, or practically equivalent, on metric M over a fixed evaluation
 set?"*
 
+**In plain terms.** We build synthetic cases where we *know* the right answer by
+construction, then run three procedures on each: the adaptive stopper (the thing
+under test), a big fixed-budget run (our stand-in for the "full-budget answer",
+not truth), and a grid of plain fixed budgets (the honest competitor). The
+adaptive method wins only if it (a) reaches the full-budget answer at least as
+reliably as the fixed grid *in every difficulty band, not just on average*, and
+(b) does so with materially fewer draws. Cases sitting right on the δ boundary
+are scored separately — no finite procedure can call those reliably, so counting
+them would just measure noise. Everything here is designed to *falsify* that
+claim if it's false.
+
 ---
 
 ## 1. Task and estimand

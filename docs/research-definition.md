@@ -8,6 +8,15 @@ wrong*. The concrete first experiment lives in
 [`experiment-design.md`](experiment-design.md); the prior art we are building on
 lives in [`prior-art.md`](prior-art.md).
 
+**In plain terms.** Lots of ML procedures run a Monte-Carlo estimator a fixed
+number of times — "1000 bootstrap resamples", say — because that's the habit,
+not because the answer needs it. We ask: can we stop early, once the *decision*
+is clear, and prove we rarely change the answer we'd have reached at the full
+budget? The catch is that stopping early *because* the answer looks clear biases
+the result, so we need a stopping rule that is safe to check after every batch.
+The rest of this doc pins down the exact question, the falsifiable hypotheses,
+and every way the idea could be fooling us.
+
 ---
 
 ## 1. Research question
@@ -36,8 +45,9 @@ is not a result.
 
 ## 3. The distinction the project rests on
 
-There are two very different things one might call "adaptive compute". We commit
-to exactly one for v0.
+"Adaptive compute" can mean two very different things. We commit to exactly one
+for v0, and the difference is the whole reason we can make a *controlled* claim
+instead of an anecdotal one.
 
 **(A) Adaptive *sample* size** — grow the number of *data points* until a
 decision about the *population* is stable. This is genuine sequential analysis.
@@ -54,19 +64,20 @@ value the procedure returns in the limit of infinite draws *on this exact data*
 (call it the B→∞ value). The error being controlled is *simulation* error, not
 sampling error.
 
-Fixing the estimand removes one hazard entirely: our confidence interval *for the
-population* is exactly as (in)valid as the underlying statistical method — the
-adaptivity does not touch it, because we never add data. **But it does not remove
-optional-stopping bias at the level of the decision.** The decision is a
-functional of the random Monte-Carlo path; a rule that stops the first time a
-running band clears a threshold stops *preferentially* on paths that have
-wandered across it, so the probability of disagreeing with the B→∞ decision is
-**not** controlled by a fixed per-look precision threshold. The sequential
-decision therefore still needs a *sequential* guarantee (an anytime-valid band or
-a bounded-resampling-risk construction — see [§6](#6-stopping-rule-v0)).
+Fixing the estimand removes one hazard entirely. Our confidence interval *for the
+population* is exactly as valid (or invalid) as the underlying statistical
+method — adaptivity never touches it, because we never add data.
 
-v0 lives entirely in regime (B). This is the whole reason the project can make a
-*controlled* claim rather than an anecdotal one.
+**But it does not remove optional-stopping bias at the decision level.** A rule
+that stops the first time a running band clears the threshold stops
+*preferentially* on paths that happen to have wandered across it. So the chance
+of disagreeing with the B→∞ decision is **not** controlled just by picking a
+tight per-look precision. The decision needs a genuinely *sequential* guarantee —
+a band that is valid no matter when you look (an anytime-valid confidence
+sequence, or a bounded-resampling-risk construction; see
+[§6](#6-stopping-rule-v0)).
+
+v0 lives entirely in regime (B).
 
 ## 4. Hypotheses (falsifiable)
 
