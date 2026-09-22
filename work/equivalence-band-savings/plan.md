@@ -1,6 +1,6 @@
 # Equivalence-band savings: why fixed-B structurally beats adaptive inside [−δ,δ]
 
-**Slug:** equivalence-band-savings · **Date:** 2026-09-22 · **Status:** approved (rev 3 — structural-negative reframe)
+**Slug:** equivalence-band-savings · **Date:** 2026-09-22 · **Status:** implemented (rev 3 — structural-negative reframe)
 
 ## Revision history (audit trail)
 
@@ -283,3 +283,29 @@ negative real and non-circular for both instruments; reuse of `_summarize_stratu
 module `FIXED_B_GRID`) and released-path inertness were confirmed sound (no findings).
 
 Plan verdict (rev 3): **APPROVE** (post-revision)
+
+### Rev-3 implementation review (round 1) — both APPROVE
+
+Two cold reviewers on the rev-3 diff. Both **APPROVE**; no CRITICAL/HIGH.
+- **Integration `code-reviewer` (anchor):** APPROVE. Verified the mechanism cold — EB linear
+  radius term ≈0.125 at n=320 structurally cannot cross δ (so `w_ad(B_ref)>δ` is genuine);
+  betting `B*=32 < median 288` is a real cross-estimator comparison; feasibility genuinely
+  passes (abstain 0.0, ref-resolved 1.000, 96/96, `|Δ|` spread 0.024 ≥ 0.020, not gamed);
+  released paths inert; scoring on the released `FIXED_B_GRID` (the 1280 grid is
+  diagnostic-only). One MEDIUM (D1: `PLATEAU_TOL` band-scaled — plateau still shown at ~60×
+  margin), one LOW (D4: `--check` replays betting only).
+- **Codex:** APPROVE. Two MEDIUMs (D2: diagnostic over generated-not-scored — identical today
+  at ref-resolved 1.0; D3: verdict from in-memory not JSON read-back — identical values).
+- All four findings are latent/non-blocking, recorded in `deferrals.md`; shipped on the
+  dual-APPROVE per the reviewer-calibration norm (no churn on non-live findings).
+
+**Result — H1 NEGATIVE in the equivalence band, now mechanistic and per-instrument:** inside
+`[−δ,δ]` fixed-B structurally dominates both adaptive instruments. EB median 1344 ≫ `B_ref`,
+`w_ad(320)=0.126>δ`, dominated by fixed-B `{32,64,128,320}`; betting median 288 < `B_ref` but
+dominated by `{32,64,128}` (`B*=32`). Fixed-B half-width plateaus (`w_fix`: 0.01210→0.01229
+over 320→1280) — a fixed-width functional — while the adaptive CS must shrink MC error below
+δ. Savings claim correctly scoped: adaptive saves on *directional* decisions under difficulty
+heterogeneity, not on equivalence.
+
+Code-review verdict: APPROVE
+Codex-review verdict: APPROVE
