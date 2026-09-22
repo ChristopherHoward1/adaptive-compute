@@ -1,0 +1,2455 @@
+{
+  "instrument": "betting",
+  "ratio": "1:1",
+  "params": {
+    "b": 64,
+    "alpha": 0.05,
+    "b_max": 8192
+  },
+  "summary": {
+    "stratum": "equivalent",
+    "scored": 96,
+    "false_stops": 0,
+    "false_stop_rate": 0.0,
+    "false_stop_ci": [
+      0.0,
+      0.03847558785767566
+    ],
+    "draws_p50": 384.0,
+    "draws_p90": 512.0,
+    "draws_p99": 512.0,
+    "abstain_rate": 0.0,
+    "reference_unresolved": 0,
+    "fixed_b_unresolved_rates": {
+      "32": 0.010416666666666666,
+      "64": 0.010416666666666666,
+      "128": 0.0,
+      "320": 0.0
+    },
+    "adaptive_dominated_fixed_b": [],
+    "fixed_b_dominating_adaptive": [
+      128,
+      320
+    ],
+    "pareto_best_savings_ratio": 0.0
+  },
+  "heterogeneity_spread": 0.033996913580246924,
+  "min_band_gap": 0.01600308641975308,
+  "false_stop_ci_upper_le_alpha": true,
+  "headline": "deep-negative",
+  "precheck": {
+    "shallow_abs_delta": 0.034,
+    "non_empty": true,
+    "deep_mean_required_draws": 32.0,
+    "shallow_mean_required_draws": 34.666666666666664,
+    "deep": [
+      {
+        "tier": "deep",
+        "seed": 7028,
+        "abs_delta": 2.3148148148077752e-05,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "deep",
+        "seed": 7029,
+        "abs_delta": 0.010354938271604941,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "deep",
+        "seed": 7030,
+        "abs_delta": 0.007353395061728385,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "deep",
+        "seed": 7031,
+        "abs_delta": 0.009606481481481466,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "deep",
+        "seed": 7032,
+        "abs_delta": 0.0004012345679013096,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "deep",
+        "seed": 7033,
+        "abs_delta": 0.0004938271604938427,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "deep",
+        "seed": 7034,
+        "abs_delta": 0.005007716049382771,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "deep",
+        "seed": 7035,
+        "abs_delta": 0.006643518518518521,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "deep",
+        "seed": 7036,
+        "abs_delta": 0.0014660493827161059,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "deep",
+        "seed": 7037,
+        "abs_delta": 0.0,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "deep",
+        "seed": 7038,
+        "abs_delta": 0.011396604938271548,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "deep",
+        "seed": 7039,
+        "abs_delta": 0.00013117283950625502,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "deep",
+        "seed": 7040,
+        "abs_delta": 0.010146604938271686,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "deep",
+        "seed": 7041,
+        "abs_delta": 0.00015432098765433278,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "deep",
+        "seed": 7042,
+        "abs_delta": 0.0052623456790124035,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "deep",
+        "seed": 7043,
+        "abs_delta": 0.001442901234567917,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "deep",
+        "seed": 7044,
+        "abs_delta": 0.0007253086419752863,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "deep",
+        "seed": 7045,
+        "abs_delta": 0.007083333333333441,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "deep",
+        "seed": 7046,
+        "abs_delta": 0.00752314814814814,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "deep",
+        "seed": 7047,
+        "abs_delta": 0.0,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "deep",
+        "seed": 7048,
+        "abs_delta": 0.002044753086419826,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "deep",
+        "seed": 7049,
+        "abs_delta": 0.0008101851851851638,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "deep",
+        "seed": 7050,
+        "abs_delta": 0.007854938271604883,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "deep",
+        "seed": 7051,
+        "abs_delta": 0.000131172839506144,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "deep",
+        "seed": 7052,
+        "abs_delta": 0.002816358024691379,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "deep",
+        "seed": 7053,
+        "abs_delta": 0.0036111111111110095,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "deep",
+        "seed": 7054,
+        "abs_delta": 0.0020910493827160925,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "deep",
+        "seed": 7055,
+        "abs_delta": 0.00037808641975312085,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "deep",
+        "seed": 7056,
+        "abs_delta": 0.0041358024691358075,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "deep",
+        "seed": 7057,
+        "abs_delta": 0.00010802469135795523,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "deep",
+        "seed": 7058,
+        "abs_delta": 0.00016975308641975495,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "deep",
+        "seed": 7059,
+        "abs_delta": 0.0012500000000000844,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "deep",
+        "seed": 7060,
+        "abs_delta": 3.086419753084435e-05,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "deep",
+        "seed": 7061,
+        "abs_delta": 0.0006790123456789088,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "deep",
+        "seed": 7062,
+        "abs_delta": 6.17283950616887e-05,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "deep",
+        "seed": 7063,
+        "abs_delta": 0.003989197530864241,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "deep",
+        "seed": 7064,
+        "abs_delta": 0.001481481481481528,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "deep",
+        "seed": 7065,
+        "abs_delta": 0.003904320987654364,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "deep",
+        "seed": 7066,
+        "abs_delta": 0.0010725308641975628,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "deep",
+        "seed": 7067,
+        "abs_delta": 0.0002160493827161325,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "deep",
+        "seed": 7068,
+        "abs_delta": 0.0009259259259258856,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "deep",
+        "seed": 7069,
+        "abs_delta": 0.003171296296296311,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "deep",
+        "seed": 7070,
+        "abs_delta": 1.5432098765422175e-05,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "deep",
+        "seed": 7071,
+        "abs_delta": 0.012168209876543212,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "deep",
+        "seed": 7072,
+        "abs_delta": 0.011118827160493838,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "deep",
+        "seed": 7073,
+        "abs_delta": 0.012307098765432123,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "deep",
+        "seed": 7074,
+        "abs_delta": 0.000432098765432154,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "deep",
+        "seed": 7075,
+        "abs_delta": 0.0027700617283950013,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      }
+    ],
+    "shallow": [
+      {
+        "tier": "shallow",
+        "seed": 8028,
+        "abs_delta": 0.033996913580246924,
+        "required_draws": 96,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "shallow",
+        "seed": 8029,
+        "abs_delta": 0.033996913580246924,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "shallow",
+        "seed": 8030,
+        "abs_delta": 0.033996913580246924,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "shallow",
+        "seed": 8031,
+        "abs_delta": 0.033996913580246924,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "shallow",
+        "seed": 8032,
+        "abs_delta": 0.033996913580246924,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "shallow",
+        "seed": 8033,
+        "abs_delta": 0.033996913580246924,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "shallow",
+        "seed": 8034,
+        "abs_delta": 0.03399691358024681,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "shallow",
+        "seed": 8035,
+        "abs_delta": 0.033996913580246924,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "shallow",
+        "seed": 8036,
+        "abs_delta": 0.033996913580246924,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "shallow",
+        "seed": 8037,
+        "abs_delta": 0.03399691358024681,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "shallow",
+        "seed": 8038,
+        "abs_delta": 0.033996913580246924,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "shallow",
+        "seed": 8039,
+        "abs_delta": 0.033996913580246924,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "shallow",
+        "seed": 8040,
+        "abs_delta": 0.033996913580246924,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "shallow",
+        "seed": 8041,
+        "abs_delta": 0.033996913580246924,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "shallow",
+        "seed": 8042,
+        "abs_delta": 0.033996913580246924,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "shallow",
+        "seed": 8043,
+        "abs_delta": 0.033996913580246924,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "shallow",
+        "seed": 8044,
+        "abs_delta": 0.033996913580246924,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "shallow",
+        "seed": 8045,
+        "abs_delta": 0.033996913580246924,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "shallow",
+        "seed": 8046,
+        "abs_delta": 0.033996913580246924,
+        "required_draws": 96,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "shallow",
+        "seed": 8047,
+        "abs_delta": 0.033996913580246924,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "shallow",
+        "seed": 8048,
+        "abs_delta": 0.03399691358024681,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "shallow",
+        "seed": 8049,
+        "abs_delta": 0.033996913580246924,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "shallow",
+        "seed": 8050,
+        "abs_delta": 0.033996913580246924,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "shallow",
+        "seed": 8051,
+        "abs_delta": 0.03399691358024681,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "shallow",
+        "seed": 8052,
+        "abs_delta": 0.033996913580246924,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "shallow",
+        "seed": 8053,
+        "abs_delta": 0.033996913580246924,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "shallow",
+        "seed": 8054,
+        "abs_delta": 0.033996913580246924,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "shallow",
+        "seed": 8055,
+        "abs_delta": 0.033996913580246924,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "shallow",
+        "seed": 8056,
+        "abs_delta": 0.033996913580246924,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "shallow",
+        "seed": 8057,
+        "abs_delta": 0.033996913580246924,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "shallow",
+        "seed": 8058,
+        "abs_delta": 0.033996913580246924,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "shallow",
+        "seed": 8059,
+        "abs_delta": 0.033996913580246924,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "shallow",
+        "seed": 8060,
+        "abs_delta": 0.033996913580246924,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "shallow",
+        "seed": 8061,
+        "abs_delta": 0.033996913580246924,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "shallow",
+        "seed": 8062,
+        "abs_delta": 0.033996913580246924,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "shallow",
+        "seed": 8063,
+        "abs_delta": 0.033996913580246924,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "shallow",
+        "seed": 8064,
+        "abs_delta": 0.033996913580246924,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "shallow",
+        "seed": 8065,
+        "abs_delta": 0.033996913580246924,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "shallow",
+        "seed": 8066,
+        "abs_delta": 0.033996913580246924,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "shallow",
+        "seed": 8067,
+        "abs_delta": 0.033996913580246924,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "shallow",
+        "seed": 8068,
+        "abs_delta": 0.033996913580246924,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "shallow",
+        "seed": 8069,
+        "abs_delta": 0.033996913580246924,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "shallow",
+        "seed": 8070,
+        "abs_delta": 0.033996913580246924,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "shallow",
+        "seed": 8071,
+        "abs_delta": 0.03399691358024681,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "shallow",
+        "seed": 8072,
+        "abs_delta": 0.033996913580246924,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "shallow",
+        "seed": 8073,
+        "abs_delta": 0.033996913580246924,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "shallow",
+        "seed": 8074,
+        "abs_delta": 0.03399691358024681,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      },
+      {
+        "tier": "shallow",
+        "seed": 8075,
+        "abs_delta": 0.033996913580246924,
+        "required_draws": 32,
+        "reference_resolved": true,
+        "stratum": "equivalent"
+      }
+    ]
+  },
+  "stability": [
+    {
+      "instrument": "betting",
+      "ratio": "1:1",
+      "params": {
+        "b": 64,
+        "alpha": 0.05,
+        "b_max": 8192
+      },
+      "summary": {
+        "stratum": "equivalent",
+        "scored": 96,
+        "false_stops": 0,
+        "false_stop_rate": 0.0,
+        "false_stop_ci": [
+          0.0,
+          0.03847558785767566
+        ],
+        "draws_p50": 384.0,
+        "draws_p90": 512.0,
+        "draws_p99": 512.0,
+        "abstain_rate": 0.0,
+        "reference_unresolved": 0,
+        "fixed_b_unresolved_rates": {
+          "32": 0.010416666666666666,
+          "64": 0.010416666666666666,
+          "128": 0.0,
+          "320": 0.0
+        },
+        "adaptive_dominated_fixed_b": [],
+        "fixed_b_dominating_adaptive": [
+          128,
+          320
+        ],
+        "pareto_best_savings_ratio": 0.0
+      },
+      "heterogeneity_spread": 0.033996913580246924,
+      "min_band_gap": 0.01600308641975308,
+      "false_stop_ci_upper_le_alpha": true,
+      "headline": "deep-negative",
+      "precheck": {
+        "shallow_abs_delta": 0.034,
+        "non_empty": true,
+        "deep_mean_required_draws": 32.0,
+        "shallow_mean_required_draws": 34.666666666666664,
+        "deep": [
+          {
+            "tier": "deep",
+            "seed": 7028,
+            "abs_delta": 2.3148148148077752e-05,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7029,
+            "abs_delta": 0.010354938271604941,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7030,
+            "abs_delta": 0.007353395061728385,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7031,
+            "abs_delta": 0.009606481481481466,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7032,
+            "abs_delta": 0.0004012345679013096,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7033,
+            "abs_delta": 0.0004938271604938427,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7034,
+            "abs_delta": 0.005007716049382771,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7035,
+            "abs_delta": 0.006643518518518521,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7036,
+            "abs_delta": 0.0014660493827161059,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7037,
+            "abs_delta": 0.0,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7038,
+            "abs_delta": 0.011396604938271548,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7039,
+            "abs_delta": 0.00013117283950625502,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7040,
+            "abs_delta": 0.010146604938271686,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7041,
+            "abs_delta": 0.00015432098765433278,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7042,
+            "abs_delta": 0.0052623456790124035,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7043,
+            "abs_delta": 0.001442901234567917,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7044,
+            "abs_delta": 0.0007253086419752863,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7045,
+            "abs_delta": 0.007083333333333441,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7046,
+            "abs_delta": 0.00752314814814814,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7047,
+            "abs_delta": 0.0,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7048,
+            "abs_delta": 0.002044753086419826,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7049,
+            "abs_delta": 0.0008101851851851638,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7050,
+            "abs_delta": 0.007854938271604883,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7051,
+            "abs_delta": 0.000131172839506144,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7052,
+            "abs_delta": 0.002816358024691379,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7053,
+            "abs_delta": 0.0036111111111110095,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7054,
+            "abs_delta": 0.0020910493827160925,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7055,
+            "abs_delta": 0.00037808641975312085,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7056,
+            "abs_delta": 0.0041358024691358075,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7057,
+            "abs_delta": 0.00010802469135795523,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7058,
+            "abs_delta": 0.00016975308641975495,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7059,
+            "abs_delta": 0.0012500000000000844,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7060,
+            "abs_delta": 3.086419753084435e-05,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7061,
+            "abs_delta": 0.0006790123456789088,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7062,
+            "abs_delta": 6.17283950616887e-05,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7063,
+            "abs_delta": 0.003989197530864241,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7064,
+            "abs_delta": 0.001481481481481528,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7065,
+            "abs_delta": 0.003904320987654364,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7066,
+            "abs_delta": 0.0010725308641975628,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7067,
+            "abs_delta": 0.0002160493827161325,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7068,
+            "abs_delta": 0.0009259259259258856,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7069,
+            "abs_delta": 0.003171296296296311,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7070,
+            "abs_delta": 1.5432098765422175e-05,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7071,
+            "abs_delta": 0.012168209876543212,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7072,
+            "abs_delta": 0.011118827160493838,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7073,
+            "abs_delta": 0.012307098765432123,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7074,
+            "abs_delta": 0.000432098765432154,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7075,
+            "abs_delta": 0.0027700617283950013,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          }
+        ],
+        "shallow": [
+          {
+            "tier": "shallow",
+            "seed": 8028,
+            "abs_delta": 0.033996913580246924,
+            "required_draws": 96,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "shallow",
+            "seed": 8029,
+            "abs_delta": 0.033996913580246924,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "shallow",
+            "seed": 8030,
+            "abs_delta": 0.033996913580246924,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "shallow",
+            "seed": 8031,
+            "abs_delta": 0.033996913580246924,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "shallow",
+            "seed": 8032,
+            "abs_delta": 0.033996913580246924,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "shallow",
+            "seed": 8033,
+            "abs_delta": 0.033996913580246924,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "shallow",
+            "seed": 8034,
+            "abs_delta": 0.03399691358024681,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "shallow",
+            "seed": 8035,
+            "abs_delta": 0.033996913580246924,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "shallow",
+            "seed": 8036,
+            "abs_delta": 0.033996913580246924,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "shallow",
+            "seed": 8037,
+            "abs_delta": 0.03399691358024681,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "shallow",
+            "seed": 8038,
+            "abs_delta": 0.033996913580246924,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "shallow",
+            "seed": 8039,
+            "abs_delta": 0.033996913580246924,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "shallow",
+            "seed": 8040,
+            "abs_delta": 0.033996913580246924,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "shallow",
+            "seed": 8041,
+            "abs_delta": 0.033996913580246924,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "shallow",
+            "seed": 8042,
+            "abs_delta": 0.033996913580246924,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "shallow",
+            "seed": 8043,
+            "abs_delta": 0.033996913580246924,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "shallow",
+            "seed": 8044,
+            "abs_delta": 0.033996913580246924,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "shallow",
+            "seed": 8045,
+            "abs_delta": 0.033996913580246924,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "shallow",
+            "seed": 8046,
+            "abs_delta": 0.033996913580246924,
+            "required_draws": 96,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "shallow",
+            "seed": 8047,
+            "abs_delta": 0.033996913580246924,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "shallow",
+            "seed": 8048,
+            "abs_delta": 0.03399691358024681,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "shallow",
+            "seed": 8049,
+            "abs_delta": 0.033996913580246924,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "shallow",
+            "seed": 8050,
+            "abs_delta": 0.033996913580246924,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "shallow",
+            "seed": 8051,
+            "abs_delta": 0.03399691358024681,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "shallow",
+            "seed": 8052,
+            "abs_delta": 0.033996913580246924,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "shallow",
+            "seed": 8053,
+            "abs_delta": 0.033996913580246924,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "shallow",
+            "seed": 8054,
+            "abs_delta": 0.033996913580246924,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "shallow",
+            "seed": 8055,
+            "abs_delta": 0.033996913580246924,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "shallow",
+            "seed": 8056,
+            "abs_delta": 0.033996913580246924,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "shallow",
+            "seed": 8057,
+            "abs_delta": 0.033996913580246924,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "shallow",
+            "seed": 8058,
+            "abs_delta": 0.033996913580246924,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "shallow",
+            "seed": 8059,
+            "abs_delta": 0.033996913580246924,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "shallow",
+            "seed": 8060,
+            "abs_delta": 0.033996913580246924,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "shallow",
+            "seed": 8061,
+            "abs_delta": 0.033996913580246924,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "shallow",
+            "seed": 8062,
+            "abs_delta": 0.033996913580246924,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "shallow",
+            "seed": 8063,
+            "abs_delta": 0.033996913580246924,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "shallow",
+            "seed": 8064,
+            "abs_delta": 0.033996913580246924,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "shallow",
+            "seed": 8065,
+            "abs_delta": 0.033996913580246924,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "shallow",
+            "seed": 8066,
+            "abs_delta": 0.033996913580246924,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "shallow",
+            "seed": 8067,
+            "abs_delta": 0.033996913580246924,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "shallow",
+            "seed": 8068,
+            "abs_delta": 0.033996913580246924,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "shallow",
+            "seed": 8069,
+            "abs_delta": 0.033996913580246924,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "shallow",
+            "seed": 8070,
+            "abs_delta": 0.033996913580246924,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "shallow",
+            "seed": 8071,
+            "abs_delta": 0.03399691358024681,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "shallow",
+            "seed": 8072,
+            "abs_delta": 0.033996913580246924,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "shallow",
+            "seed": 8073,
+            "abs_delta": 0.033996913580246924,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "shallow",
+            "seed": 8074,
+            "abs_delta": 0.03399691358024681,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "shallow",
+            "seed": 8075,
+            "abs_delta": 0.033996913580246924,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          }
+        ]
+      }
+    },
+    {
+      "instrument": "betting",
+      "ratio": "2:1",
+      "params": {
+        "b": 64,
+        "alpha": 0.05,
+        "b_max": 8192
+      },
+      "summary": {
+        "stratum": "equivalent",
+        "scored": 96,
+        "false_stops": 0,
+        "false_stop_rate": 0.0,
+        "false_stop_ci": [
+          0.0,
+          0.03847558785767566
+        ],
+        "draws_p50": 192.0,
+        "draws_p90": 512.0,
+        "draws_p99": 512.0,
+        "abstain_rate": 0.0,
+        "reference_unresolved": 0,
+        "fixed_b_unresolved_rates": {
+          "32": 0.010416666666666666,
+          "64": 0.010416666666666666,
+          "128": 0.0,
+          "320": 0.0
+        },
+        "adaptive_dominated_fixed_b": [],
+        "fixed_b_dominating_adaptive": [
+          128
+        ],
+        "pareto_best_savings_ratio": 0.0
+      },
+      "heterogeneity_spread": 0.033996913580246924,
+      "min_band_gap": 0.01600308641975308,
+      "false_stop_ci_upper_le_alpha": true,
+      "headline": "deep-negative",
+      "precheck": {
+        "shallow_abs_delta": 0.034,
+        "non_empty": true,
+        "deep_mean_required_draws": 32.0,
+        "shallow_mean_required_draws": 36.0,
+        "deep": [
+          {
+            "tier": "deep",
+            "seed": 7028,
+            "abs_delta": 2.3148148148077752e-05,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7029,
+            "abs_delta": 0.010354938271604941,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7030,
+            "abs_delta": 0.007353395061728385,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7031,
+            "abs_delta": 0.009606481481481466,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7032,
+            "abs_delta": 0.0004012345679013096,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7033,
+            "abs_delta": 0.0004938271604938427,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7034,
+            "abs_delta": 0.005007716049382771,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7035,
+            "abs_delta": 0.006643518518518521,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7036,
+            "abs_delta": 0.0014660493827161059,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7037,
+            "abs_delta": 0.0,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7038,
+            "abs_delta": 0.011396604938271548,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7039,
+            "abs_delta": 0.00013117283950625502,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7040,
+            "abs_delta": 0.010146604938271686,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7041,
+            "abs_delta": 0.00015432098765433278,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7042,
+            "abs_delta": 0.0052623456790124035,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7043,
+            "abs_delta": 0.001442901234567917,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7044,
+            "abs_delta": 0.0007253086419752863,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7045,
+            "abs_delta": 0.007083333333333441,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7046,
+            "abs_delta": 0.00752314814814814,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7047,
+            "abs_delta": 0.0,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7048,
+            "abs_delta": 0.002044753086419826,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7049,
+            "abs_delta": 0.0008101851851851638,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7050,
+            "abs_delta": 0.007854938271604883,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7051,
+            "abs_delta": 0.000131172839506144,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7052,
+            "abs_delta": 0.002816358024691379,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7053,
+            "abs_delta": 0.0036111111111110095,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7054,
+            "abs_delta": 0.0020910493827160925,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7055,
+            "abs_delta": 0.00037808641975312085,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7056,
+            "abs_delta": 0.0041358024691358075,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7057,
+            "abs_delta": 0.00010802469135795523,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7058,
+            "abs_delta": 0.00016975308641975495,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7059,
+            "abs_delta": 0.0012500000000000844,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7060,
+            "abs_delta": 3.086419753084435e-05,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7061,
+            "abs_delta": 0.0006790123456789088,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7062,
+            "abs_delta": 6.17283950616887e-05,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7063,
+            "abs_delta": 0.003989197530864241,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7064,
+            "abs_delta": 0.001481481481481528,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7065,
+            "abs_delta": 0.003904320987654364,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7066,
+            "abs_delta": 0.0010725308641975628,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7067,
+            "abs_delta": 0.0002160493827161325,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7068,
+            "abs_delta": 0.0009259259259258856,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7069,
+            "abs_delta": 0.003171296296296311,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7070,
+            "abs_delta": 1.5432098765422175e-05,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7071,
+            "abs_delta": 0.012168209876543212,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7072,
+            "abs_delta": 0.011118827160493838,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7073,
+            "abs_delta": 0.012307098765432123,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7074,
+            "abs_delta": 0.000432098765432154,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7075,
+            "abs_delta": 0.0027700617283950013,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7076,
+            "abs_delta": 0.0006018518518519089,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7077,
+            "abs_delta": 0.004074074074074008,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7078,
+            "abs_delta": 5.4012345679033125e-05,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7079,
+            "abs_delta": 0.013055555555555598,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7080,
+            "abs_delta": 0.000131172839506144,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7081,
+            "abs_delta": 0.0008410493827160082,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7082,
+            "abs_delta": 0.0036651234567901536,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7083,
+            "abs_delta": 0.005709876543209869,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7084,
+            "abs_delta": 0.0040046296296296635,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7085,
+            "abs_delta": 0.00023919753086421025,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7086,
+            "abs_delta": 0.0028395061728394566,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7087,
+            "abs_delta": 0.0024691358024691024,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7088,
+            "abs_delta": 0.0004629629629629983,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7089,
+            "abs_delta": 0.0015432098765432167,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7090,
+            "abs_delta": 0.0009027777777778079,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "deep",
+            "seed": 7091,
+            "abs_delta": 0.003341049382716066,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          }
+        ],
+        "shallow": [
+          {
+            "tier": "shallow",
+            "seed": 8028,
+            "abs_delta": 0.033996913580246924,
+            "required_draws": 96,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "shallow",
+            "seed": 8029,
+            "abs_delta": 0.033996913580246924,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "shallow",
+            "seed": 8030,
+            "abs_delta": 0.033996913580246924,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "shallow",
+            "seed": 8031,
+            "abs_delta": 0.033996913580246924,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "shallow",
+            "seed": 8032,
+            "abs_delta": 0.033996913580246924,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "shallow",
+            "seed": 8033,
+            "abs_delta": 0.033996913580246924,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "shallow",
+            "seed": 8034,
+            "abs_delta": 0.03399691358024681,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "shallow",
+            "seed": 8035,
+            "abs_delta": 0.033996913580246924,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "shallow",
+            "seed": 8036,
+            "abs_delta": 0.033996913580246924,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "shallow",
+            "seed": 8037,
+            "abs_delta": 0.03399691358024681,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "shallow",
+            "seed": 8038,
+            "abs_delta": 0.033996913580246924,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "shallow",
+            "seed": 8039,
+            "abs_delta": 0.033996913580246924,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "shallow",
+            "seed": 8040,
+            "abs_delta": 0.033996913580246924,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "shallow",
+            "seed": 8041,
+            "abs_delta": 0.033996913580246924,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "shallow",
+            "seed": 8042,
+            "abs_delta": 0.033996913580246924,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "shallow",
+            "seed": 8043,
+            "abs_delta": 0.033996913580246924,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "shallow",
+            "seed": 8044,
+            "abs_delta": 0.033996913580246924,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "shallow",
+            "seed": 8045,
+            "abs_delta": 0.033996913580246924,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "shallow",
+            "seed": 8046,
+            "abs_delta": 0.033996913580246924,
+            "required_draws": 96,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "shallow",
+            "seed": 8047,
+            "abs_delta": 0.033996913580246924,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "shallow",
+            "seed": 8048,
+            "abs_delta": 0.03399691358024681,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "shallow",
+            "seed": 8049,
+            "abs_delta": 0.033996913580246924,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "shallow",
+            "seed": 8050,
+            "abs_delta": 0.033996913580246924,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "shallow",
+            "seed": 8051,
+            "abs_delta": 0.03399691358024681,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "shallow",
+            "seed": 8052,
+            "abs_delta": 0.033996913580246924,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "shallow",
+            "seed": 8053,
+            "abs_delta": 0.033996913580246924,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "shallow",
+            "seed": 8054,
+            "abs_delta": 0.033996913580246924,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "shallow",
+            "seed": 8055,
+            "abs_delta": 0.033996913580246924,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "shallow",
+            "seed": 8056,
+            "abs_delta": 0.033996913580246924,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "shallow",
+            "seed": 8057,
+            "abs_delta": 0.033996913580246924,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "shallow",
+            "seed": 8058,
+            "abs_delta": 0.033996913580246924,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          },
+          {
+            "tier": "shallow",
+            "seed": 8059,
+            "abs_delta": 0.033996913580246924,
+            "required_draws": 32,
+            "reference_resolved": true,
+            "stratum": "equivalent"
+          }
+        ]
+      }
+    }
+  ]
+}

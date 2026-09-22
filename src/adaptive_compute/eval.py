@@ -16,6 +16,7 @@ from adaptive_compute.benchmark import (
     write_results,
 )
 from adaptive_compute.bootstrap import adaptive_bootstrap_stream, paired_bootstrap_deltas
+from adaptive_compute.equiv_probe import deterministic_probe_signature, run_and_write_probe
 from adaptive_compute.generators import BATTERY, generate
 from adaptive_compute.metrics import delta
 from adaptive_compute.reference import (
@@ -274,6 +275,12 @@ def _check() -> int:
             print(f"hard-member MCSE diagnostic failed for {member}", file=sys.stderr)
             return 1
 
+    probe_first = deterministic_probe_signature()
+    probe_second = deterministic_probe_signature()
+    if probe_first != probe_second:
+        print("equivalence probe determinism failed", file=sys.stderr)
+        return 1
+
     print(f"eval check passed; draws_consumed={total_draws}")
     return 0
 
@@ -337,6 +344,12 @@ def _compare() -> int:
     return 0
 
 
+def _equiv_probe() -> int:
+    verdict = run_and_write_probe()
+    print(f"eval equiv-probe wrote results; verdict: {verdict}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -344,6 +357,11 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--run", action="store_true", help="run the offline benchmark")
     parser.add_argument("--compare", action="store_true", help="run EB and betting A/B benchmark")
+    parser.add_argument(
+        "--equiv-probe",
+        action="store_true",
+        help="run the offline equivalence-band heterogeneity probe",
+    )
     args = parser.parse_args(argv)
     if args.check:
         return _check()
@@ -351,6 +369,8 @@ def main(argv: list[str] | None = None) -> int:
         return _run()
     if args.compare:
         return _compare()
+    if args.equiv_probe:
+        return _equiv_probe()
     parser.print_help()
     return 0
 

@@ -11,6 +11,10 @@ returns `abstain` at `B_max`. This is an anytime-valid rule: the stopping decisi
 is based on a confidence sequence intended to remain valid under optional
 stopping, not on a freshly peeked fixed-time interval.
 
+See `knowledge/equivalence-band-savings.md` for the offline probe showing how
+this position-dependent equivalence budget behaves on a heterogeneous in-band
+fixture.
+
 Reference: Howard et al. (2021), "Time-uniform, nonparametric, nonasymptotic
 confidence sequences." The implementation uses a finite-horizon
 empirical-Bernstein boundary for bounded observations, with a union-bound
