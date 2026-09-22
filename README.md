@@ -1,52 +1,105 @@
 # Adaptive Compute
 
-A research project asking a narrow question about Monte-Carlo evaluation, built
-through a self-contained agentic-coding harness. The repository is two things at
-once: the **research code** (`src/adaptive_compute/`) and the **development
-machinery** (skills, agents, and scripts) that plans, implements, reviews, and
-releases it.
+Monte Carlo evaluation often runs for a fixed simulation budget: a set number of
+bootstrap resamples or permutations. How many draws it takes to resolve the
+downstream decision varies from case to case, so a fixed budget can spend more
+draws than an easy decision needs and fewer than a hard one requires. This
+project tests whether a procedure can instead stop once further draws are
+unlikely to change the decision, while bounding how often it disagrees with a
+large fixed-budget reference.
 
-## The research question
+## Research question
 
-> For an iterative Monte-Carlo evaluation procedure run on a **fixed dataset**,
-> can we allocate simulation draws adaptively — stopping when the *decision* the
-> procedure supports is resolved — so as to spend materially fewer draws than a
-> large fixed budget, while keeping the probability of reaching a *different
-> decision than the full-budget procedure* below a pre-set bound?
+Can we stop a Monte Carlo procedure once additional draws are unlikely to change
+the decision?
 
-We count compute in **Monte-Carlo draws** (a bootstrap resample, a permutation,
-later a sampled attribution coalition), not wall-clock time — so "compute saved"
-doesn't depend on the hardware. One distinction matters throughout: we grow the
-*simulation budget* on a **fixed** dataset (the target is the answer you'd get
-with infinite draws on that exact data). We are **not** growing the *sample size*
-to learn about an unknown population — that's sequential analysis, a different
-and much-studied problem we deliberately stay out of.
+Made precise: for an iterative Monte Carlo procedure on a fixed dataset, can an
+adaptive stopping rule reach the same decision as a large fixed-budget reference
+run using materially fewer draws, while keeping the probability of a different
+decision below a bound α (here 0.05) in every difficulty stratum? The experiment
+design fixes "materially fewer" in advance as a median-draw reduction of at least
+2×, required in each stratum rather than on average.
 
-Read the docs in this order:
+The decision under test is an equivalence-band comparison of two models on a
+fixed evaluation set. Given a margin δ, the procedure returns one of:
 
-- [`docs/research-definition.md`](docs/research-definition.md) — the question, the hypotheses, and every way the idea could be fooling us.
-- [`docs/prior-art.md`](docs/prior-art.md) — what's already solved (the stopping guarantee isn't ours to invent) and the narrow empirical residual that is.
-- [`docs/experiment-design.md`](docs/experiment-design.md) — the first experiment, built to *falsify* the claim.
+- **A better than B** — the resolved interval for the metric difference lies above +δ;
+- **B better than A** — it lies below −δ;
+- **equivalent** — it lies within [−δ, +δ];
+- **abstain** — the budget is exhausted before the interval resolves.
 
-### Current result (v2026.9.3)
+## Compute and stopping
 
-The first end-to-end result is a **genuine H1 negative** — and an honest one, not
-a bug. The adaptive controller is **safe**: it reaches the full-budget answer on
-every non-boundary case (zero false stops across the battery, heavy tails
-included). But it is **not cheap**: its median draw count is higher than the
-whole fixed-budget grid it's competing against, so it misses the ≥2× savings bar.
+Compute is measured in Monte Carlo draws (a bootstrap resample, later a
+permutation or sampled attribution coalition), not wall-clock time.
 
-The catch is that this negative is **specific to the instrument we used** (an
-empirical-Bernstein confidence sequence, capped at `B_max=2048`), whose bands are
-loose at finite budgets. A tighter instrument — a betting confidence sequence
-(Waudby-Smith–Ramdas) — could resolve far sooner and flip the savings verdict, so
-we hold off on any general "adaptivity doesn't save compute" claim until that
-re-test. Details in [`work/adaptive-procedure/`](work/adaptive-procedure/) and
-[`PLAN.md`](PLAN.md).
+The evaluation dataset stays fixed; only the number of simulation draws grows.
+The sequential randomness comes from the simulation, not from collecting new
+observations, so this differs from sequential sampling of a population: any
+interval about the population is as valid as the underlying method, and stopping
+does not touch it. The stopping time does depend on the simulated path, though. A
+rule that halts the first time a running band clears δ stops preferentially on
+paths that happened to wander across it, and a fixed-time interval's coverage is
+guaranteed only at a preset number of draws, not at a data-dependent stopping
+time. The rule therefore uses an anytime-valid confidence sequence, whose
+coverage holds simultaneously at every budget and so survives optional stopping.
+The target is the decision the same procedure would reach with unlimited draws on
+that exact data; for the synthetic cases that decision is known by construction,
+and the fixed-budget reference run recovers it.
 
-## The research code
+## Documentation
 
-Python 3.12, `src/` layout, numpy-only runtime:
+- [`docs/research-definition.md`](docs/research-definition.md) — the question,
+  the falsifiable hypotheses, and the validity threats.
+- [`docs/prior-art.md`](docs/prior-art.md) — prior work on stopping guarantees
+  (Gandy 2009; the confidence-sequence literature) and the narrower empirical
+  question tested here.
+- [`docs/experiment-design.md`](docs/experiment-design.md) — the synthetic
+  battery, baselines, decision rule, and falsification criteria.
+
+## Current result (v2026.9.3)
+
+The first experiment does not support H1.
+
+Decision agreement held. On every scored non-boundary case in the battery the
+adaptive procedure resolved and returned the reference decision. The false-stop
+rate was 0 in each difficulty stratum (Wilson upper 95% bound below α = 0.05),
+including the heavy-tailed cases, and the procedure never abstained.
+
+Compute savings did not. H1 asks the adaptive rule to use at least 2× fewer draws
+than a fixed budget that reaches the same decisions at least as reliably, and to
+do so in every stratum. It met this in none of them:
+
+- **easy and equivalent strata** — a fixed budget as small as 32 resamples
+  reached the same decisions with the same reliability, while the adaptive rule
+  used a median of 128 draws (easy) and 768 (equivalent).
+- **moderate stratum** — the adaptive rule was more reliable than every fixed
+  budget in the sweep {32, 64, 128, 320}, but used more draws than all of them
+  (median 448), so no equally reliable fixed budget was expensive enough for it to
+  beat by 2×.
+
+The procedure agreed with the reference throughout but did not save draws against
+the fixed-budget sweep. Details in [`PLAN.md`](PLAN.md).
+
+## What's next
+
+The stopping rule uses a finite-horizon empirical-Bernstein confidence sequence
+for the bounded mean difference, following Howard et al. (2021), with a tuned
+draw cap of `B_max = 2048`. At the budgets where a fixed-budget bootstrap already
+resolves these cases, this band's half-width stays wider than δ, so an
+equivalence decision in particular cannot resolve until many more draws
+accumulate. This experiment evaluates that one stopping rule; it does not
+establish that adaptive stopping is generally compute-inefficient.
+
+The next experiment replaces the band with a betting confidence sequence
+(Waudby-Smith & Ramdas, 2024), which the literature reports as tighter for
+bounded variables, and holds the decision task, battery, and 2× criterion fixed.
+Whether tighter finite-budget bands translate into earlier stopping is the open
+question.
+
+## The code
+
+Python 3.12, `src/` layout, numpy-only runtime.
 
 | Module | Role |
 | --- | --- |
@@ -61,69 +114,11 @@ Python 3.12, `src/` layout, numpy-only runtime:
 | `eval.py` | `python -m adaptive_compute.eval` entry point |
 
 ```bash
-python -m adaptive_compute.eval --check   # fast decision check (wired into the gate)
-python -m adaptive_compute.eval --run     # offline benchmark → work/adaptive-procedure/results.{md,json}
+python -m adaptive_compute.eval --check   # fast decision check
+python -m adaptive_compute.eval --run     # offline benchmark, writes results.{md,json}
 ```
 
-## The harness (how this repo builds itself)
-
-Development runs as a five-stage loop, driven by an Orchestrator session against
-a human Owner. Each stage is a skill; reviews always come from **fresh
-subagents** (separate model, cold context, read-only) — the writer never reviews
-its own work.
-
-```
-/1-plan  →  /2-implement  →  /3-review  →  /4-release  →  /5-retro
-```
-
-- **/1-plan** — draft a work unit in `work/<slug>/plan.md`; a fresh reviewer critiques it.
-- **/2-implement** — dispatch the implementer into an isolated git worktree; drive the gate loop until green.
-- **/3-review** — a fresh reviewer reviews the diff against the plan.
-- **/4-release** — run the release script, push, PR, and tag autonomously.
-- **/5-retro** — record lessons and route each to the smallest durable artifact.
-
-Invariants that are mechanical, not aspirational: the gate is a script
-(`scripts/gate.sh` exits 0 or it doesn't), implementation happens only in
-worktrees, release is a script (`scripts/release.sh`), and artifacts — not
-transcripts — flow between stages. See [`CLAUDE.md`](CLAUDE.md) for the full
-constitution.
-
-## The gate
-
-`scripts/gate.sh` is the single source of truth for "is it correct". Run it from
-anywhere:
-
-```bash
-bash scripts/gate.sh
-```
-
-It `cd`s to the repo root, auto-detects stacks (here: Python + Shell), and runs
-`shellcheck` over tracked scripts, `ruff check`, `pytest -q`, plus the
-`gate.d/*.sh` hooks (shell smoke suite, ruff format-check + mypy, the eval check,
-and ML-profile hygiene). CI runs the same gate on every push and PR.
-
-## Layout
-
-- `CLAUDE.md` / `ARCHI.md` / `PLAN.md` — the always-loaded "hot" context tier (~300-line budget).
-- `config.yaml` — the one knob: profile, per-role models, implementer runtime, gate settings.
-- `src/adaptive_compute/` — the research package. `tests/` — its tests plus the harness shell smoke suite.
-- `skills/` — the loop stages (`1-plan`…`5-retro`) plus `init` / `compact`.
-- `.claude/agents/` — the fresh-subagent reviewers.
-- `scripts/` — the deterministic layer (gate, worktree, agent-exec, release, …).
-- `profiles/` — `software` / `machine-learning` (active) / `database` / `work`.
-- `knowledge/` — cold-tier docs, loaded only on citation.
-- `docs/` — the research definition, prior art, and experiment design.
-- `work/` — one directory per work unit (plan, review, retro, results).
-- `VERSION` / `CHANGELOG.md` — CalVer (`YYYY.M.MICRO`) + Keep-a-Changelog, written only by `release.sh`.
-
-## Conventions
-
-- Writer never reviews; reviews come only from fresh read-only subagents.
-- The gate and release scripts are authoritative — never overruled.
-- Implementation happens in worktrees, never in the main checkout.
-- Vendor/model names live only in `config.yaml`.
-- Shell must pass `shellcheck`; Python must pass `ruff check`, `ruff format --check`, `mypy src`, and `pytest`.
-- Notebooks are exploratory-only; correctness-critical logic moves to a gated `.py` module.
+Every run is reproducible from its generator parameters and seed.
 
 ## License
 
