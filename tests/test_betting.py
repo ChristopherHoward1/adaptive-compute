@@ -133,12 +133,9 @@ def test_drop_in_stream_equivalence_for_fixed_batch_prefix() -> None:
         b=64,
         b_max=2048,
     )
-    matched_prefix = min(eb_consumed.size, betting_consumed.size)
 
-    assert np.array_equal(
-        eb_consumed[:matched_prefix],
-        betting_consumed[:matched_prefix],
-    )
+    assert np.array_equal(eb_consumed, replayed[: eb.draws_consumed])
+    assert np.array_equal(betting_consumed, replayed[: betting.draws_consumed])
     assert _replay_decision(replayed, instrument="eb", b=64, b_max=2048) == (
         eb.decision,
         eb.draws_consumed,

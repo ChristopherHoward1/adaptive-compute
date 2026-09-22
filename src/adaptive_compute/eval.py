@@ -321,7 +321,6 @@ def _compare() -> int:
         "",
         "Both arms use the shared fixed-B grid and fixed adaptive batch size b=64.",
     ]
-    COMPARE_DIR.mkdir(parents=True, exist_ok=True)
     (COMPARE_DIR / "comparison.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
     print(f"eval compare wrote results; betting savings flip: {headline}")
     return 0

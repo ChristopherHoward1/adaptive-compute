@@ -24,7 +24,7 @@ from adaptive_compute.reference import (
 from adaptive_compute.strata import classify_delta
 from adaptive_compute.sweep import fixed_b_sweep, pareto_verdict
 
-DEFAULT_BATCH = 64
+DEFAULT_BATCH = 32
 DEFAULT_B_MAX = 2048
 DEFAULT_N_TUNE = 24
 DEFAULT_N_TEST = 2000
@@ -172,11 +172,17 @@ def _tune_params(
     *,
     instrument: AdaptiveInstrument = "eb",
 ) -> AdaptiveParams:
-    b_max_candidates = (2048,) if instrument == "eb" else (128, 256, 512, 1024)
-    candidates = tuple(
-        AdaptiveParams(b=DEFAULT_BATCH, alpha=DEFAULT_ALPHA, b_max=b_max)
-        for b_max in b_max_candidates
-    )
+    candidates: tuple[AdaptiveParams, ...]
+    if instrument == "eb":
+        candidates = (
+            AdaptiveParams(b=32, alpha=DEFAULT_ALPHA, b_max=1024),
+            AdaptiveParams(b=64, alpha=DEFAULT_ALPHA, b_max=2048),
+        )
+    else:
+        candidates = tuple(
+            AdaptiveParams(b=64, alpha=DEFAULT_ALPHA, b_max=b_max)
+            for b_max in (128, 256, 512, 1024)
+        )
     best = candidates[0]
     best_score = (1.0, 1.0, float(DEFAULT_B_MAX))
     for candidate in candidates:
