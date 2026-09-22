@@ -9,7 +9,12 @@ from pathlib import Path
 import numpy as np
 
 from adaptive_compute.adaptive import adaptive_decision
-from adaptive_compute.benchmark import run_and_write_results, run_benchmark, write_results
+from adaptive_compute.benchmark import (
+    AdaptiveParams,
+    run_and_write_results,
+    run_benchmark,
+    write_results,
+)
 from adaptive_compute.bootstrap import adaptive_bootstrap_stream, paired_bootstrap_deltas
 from adaptive_compute.generators import BATTERY, generate
 from adaptive_compute.metrics import delta
@@ -281,7 +286,13 @@ def _run() -> int:
 
 
 def _compare() -> int:
-    eb = run_benchmark(instrument="eb")
+    eb = run_benchmark(
+        instrument="eb",
+        candidates=(
+            AdaptiveParams(b=64, alpha=DEFAULT_ALPHA, b_max=2048),
+            AdaptiveParams(b=64, alpha=DEFAULT_ALPHA, b_max=1024),
+        ),
+    )
     betting = run_benchmark(instrument="betting")
     write_results(
         eb,

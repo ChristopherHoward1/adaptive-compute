@@ -171,18 +171,19 @@ def _tune_params(
     n_tune: int,
     *,
     instrument: AdaptiveInstrument = "eb",
+    candidates: tuple[AdaptiveParams, ...] | None = None,
 ) -> AdaptiveParams:
-    candidates: tuple[AdaptiveParams, ...]
-    if instrument == "eb":
-        candidates = (
-            AdaptiveParams(b=32, alpha=DEFAULT_ALPHA, b_max=1024),
-            AdaptiveParams(b=64, alpha=DEFAULT_ALPHA, b_max=2048),
-        )
-    else:
-        candidates = tuple(
-            AdaptiveParams(b=64, alpha=DEFAULT_ALPHA, b_max=b_max)
-            for b_max in (128, 256, 512, 1024)
-        )
+    if candidates is None:
+        if instrument == "eb":
+            candidates = (
+                AdaptiveParams(b=32, alpha=DEFAULT_ALPHA, b_max=1024),
+                AdaptiveParams(b=64, alpha=DEFAULT_ALPHA, b_max=2048),
+            )
+        else:
+            candidates = tuple(
+                AdaptiveParams(b=64, alpha=DEFAULT_ALPHA, b_max=b_max)
+                for b_max in (128, 256, 512, 1024)
+            )
     best = candidates[0]
     best_score = (1.0, 1.0, float(DEFAULT_B_MAX))
     for candidate in candidates:
@@ -281,8 +282,9 @@ def run_benchmark(
     n_tune: int = DEFAULT_N_TUNE,
     n_test: int = DEFAULT_N_TEST,
     instrument: AdaptiveInstrument = "eb",
+    candidates: tuple[AdaptiveParams, ...] | None = None,
 ) -> BenchmarkResult:
-    tuned = _tune_params(n_tune, instrument=instrument)
+    tuned = _tune_params(n_tune, instrument=instrument, candidates=candidates)
     runs = [
         _run_member_seed(name, params, tuned, TEST_SEED_OFFSET + i, instrument=instrument)
         for name, (params, _generator) in BATTERY.items()
