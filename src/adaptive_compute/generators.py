@@ -4,12 +4,15 @@ from __future__ import annotations
 
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
+from typing import Literal
 
 import numpy as np
 from numpy.typing import NDArray
 
 Scores = tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.int_]]
 Generator = Callable[["GeneratorParams", np.random.Generator], Scores]
+EquivalencePosition = Literal["center", "offset"]
+MixedEquivalenceCase = tuple[EquivalencePosition, int, Scores]
 
 
 @dataclass(frozen=True)
@@ -86,6 +89,103 @@ def easy_lopsided(params: GeneratorParams, rng: np.random.Generator) -> Scores:
     scores_b = _normal_scores(y, params.signal_b, params.noise_scale, rng)
     scores_a = _normal_scores(y, params.signal_a, params.noise_scale, rng)
     return scores_a.astype(np.float64), scores_b.astype(np.float64), y
+
+
+def _calibrated_equivalence_case(
+    *,
+    seed: int,
+    target_abs_delta: float,
+    n: int,
+    positive_rate: float,
+    signal_b: float,
+    noise_scale: float,
+) -> Scores:
+    from adaptive_compute.metrics import delta
+
+    rng = np.random.default_rng(seed)
+    y = _labels(n, positive_rate, rng)
+    shared = rng.normal(0.0, noise_scale, size=n)
+    scores_b_noise = rng.normal(0.0, 0.12, size=n)
+    scores_a_noise = rng.normal(0.0, 0.12, size=n)
+    scores_b = signal_b * y + shared + scores_b_noise
+
+    lo = 0.0
+    hi = 2.0
+    best_delta = float("inf")
+    best_scores_a = signal_b * y + shared + scores_a_noise
+    for _ in range(22):
+        gap = (lo + hi) / 2.0
+        candidate = (signal_b + gap) * y + shared + scores_a_noise
+        candidate_delta = delta(candidate, scores_b, y)
+        if abs(abs(candidate_delta) - target_abs_delta) < abs(abs(best_delta) - target_abs_delta):
+            best_delta = candidate_delta
+            best_scores_a = candidate
+        if abs(candidate_delta) < target_abs_delta:
+            lo = gap
+        else:
+            hi = gap
+
+    return best_scores_a.astype(np.float64), scores_b.astype(np.float64), y
+
+
+def mixed_equivalence(
+    *,
+    seed: int,
+    center: int,
+    offset: int,
+    max_abs_delta: float,
+    center_abs_delta: float = 0.0,
+    n: int = 720,
+    positive_rate: float = 0.5,
+    signal_b: float = 0.60,
+    noise_scale: float = 0.45,
+) -> tuple[MixedEquivalenceCase, ...]:
+    """Build a deterministic, unregistered in-band equivalence position spread."""
+
+    if center <= 0 or offset <= 0:
+        msg = "center and offset counts must be positive"
+        raise ValueError(msg)
+    if not 0.0 <= center_abs_delta < max_abs_delta:
+        msg = "center_abs_delta must be non-negative and below max_abs_delta"
+        raise ValueError(msg)
+    if n < 2:
+        msg = "n must be at least 2"
+        raise ValueError(msg)
+
+    cases: list[MixedEquivalenceCase] = []
+    for index in range(center):
+        case_seed = seed + index
+        cases.append(
+            (
+                "center",
+                case_seed,
+                _calibrated_equivalence_case(
+                    seed=case_seed,
+                    target_abs_delta=center_abs_delta,
+                    n=n,
+                    positive_rate=positive_rate,
+                    signal_b=signal_b,
+                    noise_scale=noise_scale,
+                ),
+            )
+        )
+    for index in range(offset):
+        case_seed = seed + 1_000 + index
+        cases.append(
+            (
+                "offset",
+                case_seed,
+                _calibrated_equivalence_case(
+                    seed=case_seed,
+                    target_abs_delta=max_abs_delta,
+                    n=n,
+                    positive_rate=positive_rate,
+                    signal_b=signal_b,
+                    noise_scale=noise_scale,
+                ),
+            )
+        )
+    return tuple(cases)
 
 
 BATTERY: Mapping[str, tuple[GeneratorParams, Generator]] = {
