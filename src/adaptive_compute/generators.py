@@ -11,8 +11,8 @@ from numpy.typing import NDArray
 
 Scores = tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.int_]]
 Generator = Callable[["GeneratorParams", np.random.Generator], Scores]
-EquivalenceTier = Literal["deep", "shallow"]
-MixedEquivalenceCase = tuple[EquivalenceTier, int, Scores]
+EquivalencePosition = Literal["center", "offset"]
+MixedEquivalenceCase = tuple[EquivalencePosition, int, Scores]
 
 
 @dataclass(frozen=True)
@@ -131,37 +131,37 @@ def _calibrated_equivalence_case(
 def mixed_equivalence(
     *,
     seed: int,
-    deep: int,
-    shallow: int,
-    shallow_abs_delta: float,
-    deep_abs_delta: float = 0.0,
+    center: int,
+    offset: int,
+    max_abs_delta: float,
+    center_abs_delta: float = 0.0,
     n: int = 720,
     positive_rate: float = 0.5,
     signal_b: float = 0.60,
     noise_scale: float = 0.45,
 ) -> tuple[MixedEquivalenceCase, ...]:
-    """Build a deterministic, unregistered in-band equivalence mixture."""
+    """Build a deterministic, unregistered in-band equivalence position spread."""
 
-    if deep <= 0 or shallow <= 0:
-        msg = "deep and shallow counts must be positive"
+    if center <= 0 or offset <= 0:
+        msg = "center and offset counts must be positive"
         raise ValueError(msg)
-    if not 0.0 <= deep_abs_delta < shallow_abs_delta:
-        msg = "deep_abs_delta must be non-negative and below shallow_abs_delta"
+    if not 0.0 <= center_abs_delta < max_abs_delta:
+        msg = "center_abs_delta must be non-negative and below max_abs_delta"
         raise ValueError(msg)
     if n < 2:
         msg = "n must be at least 2"
         raise ValueError(msg)
 
     cases: list[MixedEquivalenceCase] = []
-    for index in range(deep):
+    for index in range(center):
         case_seed = seed + index
         cases.append(
             (
-                "deep",
+                "center",
                 case_seed,
                 _calibrated_equivalence_case(
                     seed=case_seed,
-                    target_abs_delta=deep_abs_delta,
+                    target_abs_delta=center_abs_delta,
                     n=n,
                     positive_rate=positive_rate,
                     signal_b=signal_b,
@@ -169,15 +169,15 @@ def mixed_equivalence(
                 ),
             )
         )
-    for index in range(shallow):
+    for index in range(offset):
         case_seed = seed + 1_000 + index
         cases.append(
             (
-                "shallow",
+                "offset",
                 case_seed,
                 _calibrated_equivalence_case(
                     seed=case_seed,
-                    target_abs_delta=shallow_abs_delta,
+                    target_abs_delta=max_abs_delta,
                     n=n,
                     positive_rate=positive_rate,
                     signal_b=signal_b,

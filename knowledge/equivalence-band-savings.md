@@ -1,31 +1,27 @@
 # Equivalence-Band Savings
 
-The equivalence budget is position-dependent. To conclude `equivalent`, the
-whole confidence interval must sit inside `[-delta, +delta]`; a truth at
-`|Delta| = delta - epsilon` needs half-width near `epsilon`, so cases closer to
-the band edge are harder.
+Inside `[-delta, +delta]`, fixed-B structurally beats the adaptive instruments in this
+repo's offline probe. The reason is estimator class, not a lucky grid: the fixed-B
+percentile-bootstrap interval is the same fixed-width functional used by the reference, so
+its half-width converges to the data's bootstrap-quantile spread and then plateaus. An
+anytime-valid instrument must instead shrink a confidence-sequence half-width below
+`delta`, which costs additional Monte Carlo draws.
 
-The frozen natural `equivalent` stratum is generator-homogeneous rather than
-mechanistically homogeneous. In `eval --equiv-probe`, the diagnostic over the
-released battery reported tightly clustered `delta - |Delta|` values and low
-draw CV for the equivalent stratum under both instruments; it is only a framing
-check, not the verdict.
+`eval --equiv-probe` records this asymmetry in `work/equivalence-band-savings/`. On the
+primary in-band fixture (`|Delta| <= 0.024`, 96/96 scored), the median fixed percentile
+half-width was `0.0121` at `B_ref=320` and `0.0123` at `4*B_ref=1280`, a plateau gap of
+`0.0002`. EB's adaptive half-width at `B_ref` was still `0.1264 > delta=0.0500`, with a
+median adaptive crossing at 832 draws and median scored draws 1344. Betting crossed below
+`delta` earlier, at median 192 draws with median scored draws 288, but the median cheapest
+resolving fixed-B was 32, so fixed-B still dominated betting on equivalence decisions.
 
-The decisive mixed-equivalence probe constructs a separate unregistered fixture,
-proves a non-empty reference-resolvable shallow region at `B_ref=320`, and then
-scores both adaptive instruments through `_summarize_stratum -> pareto_verdict`
-on the shared fixed-B grid. The production probe selected shallow
-`|Delta| ~= 0.034`, with deep mean required reference draws 32.0 and shallow
-mean required reference draws 34.7, and scored all 96 primary-ratio cases with
-zero reference unresolved.
+The honest savings verdict is therefore **deep-negative** for both instruments against the
+released `FIXED_B_GRID=(32,64,128,320)`: EB had fixed-B dominators `32, 64, 128, 320`, and
+betting had dominators `32, 64, 128`. Both arms had zero abstentions, zero false stops, and
+reference-resolved fraction 1.000 on the scored fixture, so the negative is not an
+abstention or attrition artifact.
 
-Verdict from `work/equivalence-band-savings/verdict.md`: **deep-negative**.
-Neither EB nor betting met the fixed-B Pareto gate on the heterogeneous in-band
-population. Primary 1:1 medians were EB 1824 draws and betting 384 draws; both
-had 0.00x best savings, fixed-B dominators, zero abstentions, and zero false
-stops with Wilson upper CI 0.0385. The headline was stable across the 1:1 and
-2:1 deep:shallow ratios.
-
-If a future fixture cannot prove a non-empty reference-resolvable shallow tier
-at `B_ref=320`, the correct interpretation is reference-resolving power, not an
-adaptivity verdict.
+Scope this narrowly. Adaptive Monte Carlo can still save draws for directional decisions
+under difficulty heterogeneity, where a confidence sequence can cross a one-sided
+threshold early. This note only claims the equivalence-band result: for in-band decisions,
+the fixed-width percentile functional is the cheaper tool in the measured fixture.

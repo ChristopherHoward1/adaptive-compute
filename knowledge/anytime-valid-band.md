@@ -102,3 +102,7 @@ the shared `b = 64` and reduced held-out median draws from EB's `128/768/448`
 both arms passed the false-stop test, but betting's `savings_pareto_pass` remained
 false because the equivalent stratum still had fixed-B dominators under the shared
 fixed-B grid.
+
+For the follow-up equivalence-band retest and its structural-negative scoping, see
+`knowledge/equivalence-band-savings.md`: adaptive savings are a directional-decision
+story here, not an equivalence-decision story.

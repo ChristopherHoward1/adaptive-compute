@@ -1,15 +1,19 @@
-"""Offline equivalence-band heterogeneity probe."""
+"""Offline equivalence-band estimator-asymmetry probe."""
 
 from __future__ import annotations
 
 import json
 from dataclasses import asdict, dataclass, replace
+from math import ceil
 from pathlib import Path
-from statistics import fmean
 
 import numpy as np
 
-from adaptive_compute.adaptive import AdaptiveInstrument, adaptive_decision
+from adaptive_compute.adaptive import (
+    AdaptiveInstrument,
+    adaptive_decision,
+    empirical_bernstein_bounds,
+)
 from adaptive_compute.benchmark import (
     FIXED_B_GRID,
     TARGET_SAVINGS_RATIO,
@@ -18,8 +22,9 @@ from adaptive_compute.benchmark import (
     StratumSummary,
     _summarize_stratum,
     run_benchmark,
-    wilson_interval,
 )
+from adaptive_compute.betting import BettingCSState, _mean_grid
+from adaptive_compute.bootstrap import adaptive_bootstrap_stream, paired_bootstrap_deltas
 from adaptive_compute.generators import BATTERY, MixedEquivalenceCase, generate, mixed_equivalence
 from adaptive_compute.metrics import delta
 from adaptive_compute.reference import (
@@ -40,31 +45,53 @@ PROBE_B = 64
 PROBE_B_MAX = 8192
 PROBE_BASE_SEED = 7_028
 PROBE_CASES_PER_RATIO = 96
-PRECHECK_CASES_PER_RATIO = 12
+DETERMINISM_CASES_PER_RATIO = 12
 PROBE_RATIOS = ((1, 1), (2, 1))
-SHALLOW_TARGET_CANDIDATES = (0.038, 0.037, 0.036, 0.035, 0.034, 0.033)
-REQUIRED_DRAW_GRID = (32, 64, 96, 128, 160, 192, 224, 256, 288, DEFAULT_B_REF)
-HETEROGENEITY_SPREAD_MIN = 0.025
+FIXTURE_MAX_ABS_DELTA = 0.024
+FIXTURE_MIN_ABS_DELTA_SPREAD = 0.020
+MAX_ABSTAIN_RATE = 0.05
+MIN_REFERENCE_RESOLVED_FRACTION = 0.95
+DIAGNOSTIC_FIXED_B_GRID = (32, 64, 128, DEFAULT_B_REF, 640, 960, 4 * DEFAULT_B_REF)
+DIAGNOSTIC_ADAPTIVE_GRID = (
+    64,
+    128,
+    192,
+    DEFAULT_B_REF,
+    512,
+    768,
+    1024,
+    1536,
+    2048,
+    4096,
+    PROBE_B_MAX,
+)
+PLATEAU_TOL = 4.0 * DEFAULT_DELTA / np.sqrt(DEFAULT_B_REF)
 
 
 @dataclass(frozen=True)
-class RequiredDraw:
-    tier: str
+class CaseMechanism:
+    position: str
     seed: int
     abs_delta: float
-    required_draws: int | None
-    reference_resolved: bool
-    stratum: str
+    fixed_half_widths: dict[int, float]
+    cheapest_fixed_equivalent: int | None
+    adaptive_half_widths: dict[int, float]
+    adaptive_crossing_draws: int | None
 
 
 @dataclass(frozen=True)
-class RegionPrecheck:
-    shallow_abs_delta: float | None
-    non_empty: bool
-    deep_mean_required_draws: float
-    shallow_mean_required_draws: float
-    deep: tuple[RequiredDraw, ...]
-    shallow: tuple[RequiredDraw, ...]
+class MechanismDiagnostic:
+    instrument: AdaptiveInstrument
+    max_looks: int
+    fixed_b_grid: tuple[int, ...]
+    adaptive_draw_grid: tuple[int, ...]
+    fixed_width_at_b_ref: float
+    fixed_width_at_4x_b_ref: float
+    fixed_plateau_gap: float
+    eb_width_at_b_ref: float | None
+    adaptive_crossing_median: float
+    cheapest_fixed_equivalent_median: float
+    cases: tuple[CaseMechanism, ...]
 
 
 @dataclass(frozen=True)
@@ -73,17 +100,18 @@ class ProbeRun:
     ratio: str
     params: AdaptiveParams
     summary: StratumSummary
-    heterogeneity_spread: float
+    mechanism: MechanismDiagnostic
+    abs_delta_spread: float
     min_band_gap: float
+    generated: int
+    scored: int
+    reference_resolved_fraction: float
     false_stop_ci_upper_le_alpha: bool
     headline: str
-    precheck: RegionPrecheck
 
 
 def probe_params() -> AdaptiveParams:
     params = AdaptiveParams(b=PROBE_B, alpha=DEFAULT_ALPHA, b_max=PROBE_B_MAX)
-    # Pinned high enough that the empirical-Bernstein arm can resolve shallow
-    # in-band cases whose equivalence budget is set by delta - |Delta|.
     assert params.b == PROBE_B
     assert params.b_max == PROBE_B_MAX
     return params
@@ -97,134 +125,33 @@ def _fixed_seed(case_seed: int) -> int:
     return 180_000 + case_seed
 
 
-def _required_reference_draws(
-    scores_a: np.ndarray,
-    scores_b: np.ndarray,
-    y: np.ndarray,
-    *,
-    seed: int,
-) -> int | None:
-    for result in fixed_b_sweep(
-        scores_a,
-        scores_b,
-        y,
-        grid=REQUIRED_DRAW_GRID,
-        margin=DEFAULT_DELTA,
-        alpha=DEFAULT_ALPHA,
-        seed=seed,
-    ):
-        if result.decision != "unresolved":
-            return result.b
-    return None
-
-
-def _assess_case(
-    tier: str, seed: int, scores: tuple[np.ndarray, np.ndarray, np.ndarray]
-) -> RequiredDraw:
-    scores_a, scores_b, y = scores
-    plugin_delta = delta(scores_a, scores_b, y)
-    stratum = classify_delta(plugin_delta, DEFAULT_DELTA)
-    resolved = False
-    try:
-        fixed_budget_reference(
-            scores_a, scores_b, y, seed=_reference_seed(seed), b_ref=DEFAULT_B_REF
-        )
-        resolved = True
-    except UnresolvedReferenceError:
-        resolved = False
-    required = (
-        _required_reference_draws(scores_a, scores_b, y, seed=_reference_seed(seed))
-        if resolved
-        else None
-    )
-    return RequiredDraw(
-        tier=tier,
-        seed=seed,
-        abs_delta=abs(plugin_delta),
-        required_draws=required,
-        reference_resolved=resolved,
-        stratum=stratum,
-    )
-
-
-def _mix_counts(deep_ratio: int, shallow_ratio: int, *, cases_per_ratio: int) -> tuple[int, int]:
-    unit = cases_per_ratio // (deep_ratio + shallow_ratio)
-    deep = deep_ratio * unit
-    shallow = shallow_ratio * unit
-    return deep, shallow
+def _mix_counts(center_ratio: int, offset_ratio: int, *, cases_per_ratio: int) -> tuple[int, int]:
+    unit = cases_per_ratio // (center_ratio + offset_ratio)
+    return center_ratio * unit, offset_ratio * unit
 
 
 def build_mixed_cases(
     *,
-    deep_ratio: int,
-    shallow_ratio: int,
+    center_ratio: int = 1,
+    offset_ratio: int = 1,
     seed: int = PROBE_BASE_SEED,
-    shallow_abs_delta: float,
     cases_per_ratio: int = PROBE_CASES_PER_RATIO,
 ) -> tuple[MixedEquivalenceCase, ...]:
-    deep, shallow = _mix_counts(deep_ratio, shallow_ratio, cases_per_ratio=cases_per_ratio)
+    center, offset = _mix_counts(
+        center_ratio,
+        offset_ratio,
+        cases_per_ratio=cases_per_ratio,
+    )
     return mixed_equivalence(
         seed=seed,
-        deep=deep,
-        shallow=shallow,
-        shallow_abs_delta=shallow_abs_delta,
-    )
-
-
-def precheck_region(
-    *,
-    deep_ratio: int = 1,
-    shallow_ratio: int = 1,
-    seed: int = PROBE_BASE_SEED,
-    cases_per_ratio: int = PRECHECK_CASES_PER_RATIO,
-) -> RegionPrecheck:
-    deep_count, shallow_count = _mix_counts(
-        deep_ratio, shallow_ratio, cases_per_ratio=cases_per_ratio
-    )
-    for candidate in SHALLOW_TARGET_CANDIDATES:
-        cases = mixed_equivalence(
-            seed=seed,
-            deep=deep_count,
-            shallow=shallow_count,
-            shallow_abs_delta=candidate,
-        )
-        assessed = tuple(_assess_case(tier, case_seed, scores) for tier, case_seed, scores in cases)
-        deep = tuple(item for item in assessed if item.tier == "deep")
-        shallow = tuple(item for item in assessed if item.tier == "shallow")
-        deep_required = [item.required_draws for item in deep if item.required_draws is not None]
-        shallow_required = [
-            item.required_draws for item in shallow if item.required_draws is not None
-        ]
-        shallow_scored = [
-            item
-            for item in shallow
-            if item.stratum == "equivalent"
-            and item.reference_resolved
-            and item.required_draws is not None
-        ]
-        shallow_mean = fmean(shallow_required) if shallow_required else 0.0
-        deep_mean = fmean(deep_required) if deep_required else 0.0
-        if shallow_scored and len(shallow_scored) == len(shallow) and shallow_mean > deep_mean:
-            return RegionPrecheck(
-                shallow_abs_delta=candidate,
-                non_empty=True,
-                deep_mean_required_draws=deep_mean,
-                shallow_mean_required_draws=shallow_mean,
-                deep=deep,
-                shallow=shallow,
-            )
-    return RegionPrecheck(
-        shallow_abs_delta=None,
-        non_empty=False,
-        deep_mean_required_draws=0.0,
-        shallow_mean_required_draws=0.0,
-        deep=(),
-        shallow=(),
+        center=center,
+        offset=offset,
+        max_abs_delta=FIXTURE_MAX_ABS_DELTA,
     )
 
 
 def _run_case(
-    tier: str,
+    position: str,
     case_seed: int,
     scores: tuple[np.ndarray, np.ndarray, np.ndarray],
     params: AdaptiveParams,
@@ -271,8 +198,9 @@ def _run_case(
             seed=_fixed_seed(case_seed),
         )
     }
+    assert set(fixed_decisions) == set(FIXED_B_GRID)
     return MemberRun(
-        member=f"mixed_equivalence_{tier}",
+        member=f"mixed_equivalence_{position}",
         stratum=stratum,
         seed=case_seed,
         reference_decision=reference_decision,
@@ -283,14 +211,160 @@ def _run_case(
     )
 
 
-def _headline(summary: StratumSummary) -> str:
-    passes_false_stop = summary.false_stop_ci[1] <= DEFAULT_ALPHA
-    flips = (
-        summary.pareto_best_savings_ratio >= TARGET_SAVINGS_RATIO
-        and not summary.fixed_b_dominating_adaptive
-        and passes_false_stop
+def _half_width(interval: tuple[float, float]) -> float:
+    return (interval[1] - interval[0]) / 2.0
+
+
+def _fixed_half_widths(
+    scores_a: np.ndarray,
+    scores_b: np.ndarray,
+    y: np.ndarray,
+    *,
+    seed: int,
+) -> tuple[dict[int, float], int | None]:
+    bootstrap = paired_bootstrap_deltas(
+        scores_a,
+        scores_b,
+        y,
+        draws=max(DIAGNOSTIC_FIXED_B_GRID),
+        seed=seed,
     )
-    return "flip" if flips else "deep-negative"
+    widths: dict[int, float] = {}
+    cheapest: int | None = None
+    for b in DIAGNOSTIC_FIXED_B_GRID:
+        lower, upper = np.percentile(
+            bootstrap.deltas[:b],
+            [100.0 * DEFAULT_ALPHA / 2.0, 100.0 * (1.0 - DEFAULT_ALPHA / 2.0)],
+        )
+        widths[b] = (float(upper) - float(lower)) / 2.0
+        if cheapest is None and lower >= -DEFAULT_DELTA and upper <= DEFAULT_DELTA:
+            cheapest = b
+    return widths, cheapest
+
+
+def _adaptive_half_widths(
+    scores_a: np.ndarray,
+    scores_b: np.ndarray,
+    y: np.ndarray,
+    *,
+    seed: int,
+    params: AdaptiveParams,
+    instrument: AdaptiveInstrument,
+) -> tuple[dict[int, float], int | None]:
+    values = np.empty(params.b_max, dtype=np.float64)
+    widths: dict[int, float] = {}
+    crossing: int | None = None
+    draws = 0
+    max_looks = ceil(params.b_max / params.b)
+    betting_state = BettingCSState(grid=_mean_grid(401)) if instrument == "betting" else None
+    for batch in adaptive_bootstrap_stream(
+        scores_a,
+        scores_b,
+        y,
+        batch_draws=params.b,
+        max_draws=params.b_max,
+        seed=seed,
+    ):
+        current = batch.draws_consumed
+        values[draws : draws + current] = batch.deltas[:current]
+        draws += current
+        if instrument == "eb":
+            bounds = empirical_bernstein_bounds(
+                values[:draws],
+                alpha=params.alpha,
+                max_looks=max_looks,
+            )
+        else:
+            assert betting_state is not None
+            betting_state.update_delta(batch.deltas[:current])
+            bounds = betting_state.bounds(alpha=params.alpha)
+        width = _half_width(bounds)
+        if draws in DIAGNOSTIC_ADAPTIVE_GRID:
+            widths[draws] = width
+        if crossing is None and width < DEFAULT_DELTA:
+            crossing = draws
+        if draws >= max(DIAGNOSTIC_ADAPTIVE_GRID) and crossing is not None:
+            break
+    return widths, crossing
+
+
+def mechanism_diagnostic(
+    instrument: AdaptiveInstrument,
+    cases: tuple[MixedEquivalenceCase, ...],
+    *,
+    params: AdaptiveParams | None = None,
+) -> MechanismDiagnostic:
+    params = probe_params() if params is None else params
+    case_payload: list[CaseMechanism] = []
+    for position, case_seed, (scores_a, scores_b, y) in cases:
+        fixed_widths, cheapest_fixed = _fixed_half_widths(
+            scores_a,
+            scores_b,
+            y,
+            seed=_fixed_seed(case_seed),
+        )
+        adaptive_widths, adaptive_crossing = _adaptive_half_widths(
+            scores_a,
+            scores_b,
+            y,
+            seed=_reference_seed(case_seed),
+            params=params,
+            instrument=instrument,
+        )
+        case_payload.append(
+            CaseMechanism(
+                position=position,
+                seed=case_seed,
+                abs_delta=abs(delta(scores_a, scores_b, y)),
+                fixed_half_widths=fixed_widths,
+                cheapest_fixed_equivalent=cheapest_fixed,
+                adaptive_half_widths=adaptive_widths,
+                adaptive_crossing_draws=adaptive_crossing,
+            )
+        )
+
+    fixed_b_ref = float(np.median([case.fixed_half_widths[DEFAULT_B_REF] for case in case_payload]))
+    fixed_4x = float(
+        np.median([case.fixed_half_widths[4 * DEFAULT_B_REF] for case in case_payload])
+    )
+    crossings = [
+        case.adaptive_crossing_draws
+        for case in case_payload
+        if case.adaptive_crossing_draws is not None
+    ]
+    cheapest = [
+        case.cheapest_fixed_equivalent
+        for case in case_payload
+        if case.cheapest_fixed_equivalent is not None
+    ]
+    eb_width_at_b_ref = (
+        float(np.median([case.adaptive_half_widths[DEFAULT_B_REF] for case in case_payload]))
+        if instrument == "eb"
+        else None
+    )
+    return MechanismDiagnostic(
+        instrument=instrument,
+        max_looks=ceil(params.b_max / params.b),
+        fixed_b_grid=DIAGNOSTIC_FIXED_B_GRID,
+        adaptive_draw_grid=DIAGNOSTIC_ADAPTIVE_GRID,
+        fixed_width_at_b_ref=fixed_b_ref,
+        fixed_width_at_4x_b_ref=fixed_4x,
+        fixed_plateau_gap=abs(fixed_4x - fixed_b_ref),
+        eb_width_at_b_ref=eb_width_at_b_ref,
+        adaptive_crossing_median=float(np.median(crossings)) if crossings else float("inf"),
+        cheapest_fixed_equivalent_median=float(np.median(cheapest)) if cheapest else float("inf"),
+        cases=tuple(case_payload),
+    )
+
+
+def _headline(summary: StratumSummary) -> str:
+    fixed_dominates = bool(summary.fixed_b_dominating_adaptive)
+    adaptive_flip = (
+        summary.pareto_best_savings_ratio >= TARGET_SAVINGS_RATIO
+        and not fixed_dominates
+        and summary.false_stop_ci[1] <= DEFAULT_ALPHA
+    )
+    return "adaptive-flip" if adaptive_flip else "deep-negative"
 
 
 def _summarize_probe_stratum(runs: list[MemberRun]) -> StratumSummary:
@@ -320,76 +394,70 @@ def _summarize_probe_stratum(runs: list[MemberRun]) -> StratumSummary:
     return summary
 
 
+def _assert_probe_guards(probe: ProbeRun) -> None:
+    assert probe.params.b == PROBE_B
+    assert probe.params.b_max == PROBE_B_MAX
+    assert probe.reference_resolved_fraction >= MIN_REFERENCE_RESOLVED_FRACTION
+    assert probe.summary.abstain_rate <= MAX_ABSTAIN_RATE
+    assert probe.abs_delta_spread >= FIXTURE_MIN_ABS_DELTA_SPREAD
+    assert probe.min_band_gap > 0.0
+    assert probe.mechanism.fixed_plateau_gap <= PLATEAU_TOL
+    if probe.instrument == "eb":
+        assert probe.mechanism.eb_width_at_b_ref is not None
+        assert probe.mechanism.eb_width_at_b_ref > DEFAULT_DELTA
+    else:
+        assert probe.mechanism.cheapest_fixed_equivalent_median < probe.summary.draws_p50
+
+
 def run_probe(
     *,
     instrument: AdaptiveInstrument,
-    deep_ratio: int,
-    shallow_ratio: int,
-    precheck: RegionPrecheck | None = None,
+    center_ratio: int = 1,
+    offset_ratio: int = 1,
     cases_per_ratio: int = PROBE_CASES_PER_RATIO,
 ) -> ProbeRun:
-    if precheck is None:
-        precheck = precheck_region(deep_ratio=deep_ratio, shallow_ratio=shallow_ratio)
-    if not precheck.non_empty or precheck.shallow_abs_delta is None:
-        empty_summary = StratumSummary(
-            stratum="equivalent",
-            scored=0,
-            false_stops=0,
-            false_stop_rate=0.0,
-            false_stop_ci=wilson_interval(0, 0),
-            draws_p50=0.0,
-            draws_p90=0.0,
-            draws_p99=0.0,
-            abstain_rate=0.0,
-            reference_unresolved=0,
-            fixed_b_unresolved_rates={b: 0.0 for b in FIXED_B_GRID},
-            adaptive_dominated_fixed_b=(),
-            fixed_b_dominating_adaptive=(),
-            pareto_best_savings_ratio=0.0,
-        )
-        return ProbeRun(
-            instrument=instrument,
-            ratio=f"{deep_ratio}:{shallow_ratio}",
-            params=probe_params(),
-            summary=empty_summary,
-            heterogeneity_spread=0.0,
-            min_band_gap=0.0,
-            false_stop_ci_upper_le_alpha=False,
-            headline="reference-resolving-power",
-            precheck=precheck,
-        )
-
-    assert probe_params().b_max == PROBE_B_MAX
+    params = probe_params()
     cases = build_mixed_cases(
-        deep_ratio=deep_ratio,
-        shallow_ratio=shallow_ratio,
-        shallow_abs_delta=precheck.shallow_abs_delta,
+        center_ratio=center_ratio,
+        offset_ratio=offset_ratio,
         cases_per_ratio=cases_per_ratio,
     )
-    deltas = [abs(delta(scores_a, scores_b, y)) for _tier, _seed, (scores_a, scores_b, y) in cases]
+    abs_deltas = [
+        abs(delta(scores_a, scores_b, y)) for _pos, _seed, (scores_a, scores_b, y) in cases
+    ]
+    assert max(abs_deltas) <= FIXTURE_MAX_ABS_DELTA + 1e-12
+    assert all(item < DEFAULT_DELTA for item in abs_deltas)
+
     runs = [
-        _run_case(tier, case_seed, scores, probe_params(), instrument=instrument)
-        for tier, case_seed, scores in cases
+        _run_case(position, case_seed, scores, params, instrument=instrument)
+        for position, case_seed, scores in cases
     ]
     scored_equivalent = [
         run for run in runs if run.stratum == "equivalent" and run.reference_decision is not None
     ]
     summary = _summarize_probe_stratum(scored_equivalent)
-    headline = _headline(summary)
-    return ProbeRun(
+    mechanism = mechanism_diagnostic(instrument, cases, params=params)
+    generated = len(cases)
+    resolved = generated - sum(run.reference_unresolved for run in runs)
+    probe = ProbeRun(
         instrument=instrument,
-        ratio=f"{deep_ratio}:{shallow_ratio}",
-        params=probe_params(),
+        ratio=f"{center_ratio}:{offset_ratio}",
+        params=params,
         summary=summary,
-        heterogeneity_spread=max(deltas) - min(deltas),
-        min_band_gap=min(DEFAULT_DELTA - item for item in deltas),
+        mechanism=mechanism,
+        abs_delta_spread=max(abs_deltas) - min(abs_deltas),
+        min_band_gap=min(DEFAULT_DELTA - item for item in abs_deltas),
+        generated=generated,
+        scored=len(scored_equivalent),
+        reference_resolved_fraction=resolved / generated if generated else 0.0,
         false_stop_ci_upper_le_alpha=summary.false_stop_ci[1] <= DEFAULT_ALPHA,
-        headline=headline,
-        precheck=precheck,
+        headline=_headline(summary),
     )
+    _assert_probe_guards(probe)
+    return probe
 
 
-def _diagnostic_for_instrument(instrument: AdaptiveInstrument) -> dict[str, object]:
+def _natural_stratum_diagnostic(instrument: AdaptiveInstrument) -> dict[str, object]:
     result = run_benchmark(
         n_tune=1,
         n_test=32,
@@ -421,22 +489,81 @@ def _diagnostic_for_instrument(instrument: AdaptiveInstrument) -> dict[str, obje
     }
 
 
-def write_diagnostic() -> tuple[dict[str, object], ...]:
-    payload = tuple(_diagnostic_for_instrument(instrument) for instrument in ("eb", "betting"))
+def _format_curve(widths: dict[int, float]) -> str:
+    return ", ".join(f"{draws}:{width:.4f}" for draws, width in sorted(widths.items()))
+
+
+def write_diagnostic(
+    eb: ProbeRun,
+    betting: ProbeRun,
+) -> tuple[dict[str, object], ...]:
+    natural = tuple(_natural_stratum_diagnostic(instrument) for instrument in ("eb", "betting"))
     lines = [
-        "# Equivalence Stratum Diagnostic",
+        "# Equivalence-Band Estimator Asymmetry",
         "",
         (
-            "This near-circular diagnostic only checks that the frozen natural "
-            "`equivalent` stratum is generator-homogeneous; the verdict comes from "
-            "the mixed probe, not this table."
+            "The fixture spans in-band positions only. It does not claim difficulty "
+            "heterogeneity; the measured mechanism is fixed-width percentile intervals "
+            "versus shrinking anytime-valid confidence sequences."
         ),
         "",
-        "| instrument | scored | adaptive draws p50/p90/p99 | draws CV | "
-        "delta - `|Delta|` p50/p90/p99 | gap CV |",
-        "| --- | ---: | --- | ---: | --- | ---: |",
+        "## Mechanism curves",
+        "",
+        (
+            f"Scored with b={PROBE_B}, B_max={PROBE_B_MAX}, "
+            f"max_looks={eb.mechanism.max_looks}, fixed-B scoring grid={FIXED_B_GRID}. "
+            f"The diagnostic-only fixed curve samples through {4 * DEFAULT_B_REF} draws."
+        ),
+        "",
+        "| arm | fixed w(B_ref) | fixed w(4*B_ref) | plateau gap | adaptive w(B_ref) | "
+        "median adaptive crossing | median fixed B* |",
+        "| --- | ---: | ---: | ---: | ---: | ---: | ---: |",
     ]
-    for item in payload:
+    for probe in (eb, betting):
+        eb_width = (
+            f"{probe.mechanism.eb_width_at_b_ref:.4f}"
+            if probe.mechanism.eb_width_at_b_ref is not None
+            else "n/a"
+        )
+        lines.append(
+            f"| {probe.instrument} | {probe.mechanism.fixed_width_at_b_ref:.4f} | "
+            f"{probe.mechanism.fixed_width_at_4x_b_ref:.4f} | "
+            f"{probe.mechanism.fixed_plateau_gap:.4f} | {eb_width} | "
+            f"{probe.mechanism.adaptive_crossing_median:.0f} | "
+            f"{probe.mechanism.cheapest_fixed_equivalent_median:.0f} |"
+        )
+    lines.extend(
+        [
+            "",
+            "## Representative case curves",
+            "",
+            "| arm | seed | `|Delta|` | w_fix(B) | w_ad(n) |",
+            "| --- | ---: | ---: | --- | --- |",
+        ]
+    )
+    for probe in (eb, betting):
+        case = probe.mechanism.cases[-1]
+        lines.append(
+            f"| {probe.instrument} | {case.seed} | {case.abs_delta:.4f} | "
+            f"{_format_curve(case.fixed_half_widths)} | "
+            f"{_format_curve(case.adaptive_half_widths)} |"
+        )
+    lines.extend(
+        [
+            "",
+            "## Natural equivalent stratum",
+            "",
+            (
+                "This frozen-battery diagnostic is generator-homogeneous context only; "
+                "the verdict is the scored in-band fixture above."
+            ),
+            "",
+            "| instrument | scored | adaptive draws p50/p90/p99 | draws CV | "
+            "delta - `|Delta|` p50/p90/p99 | gap CV |",
+            "| --- | ---: | --- | ---: | --- | ---: |",
+        ]
+    )
+    for item in natural:
         draws = f"{item['draws_p50']:.0f}/{item['draws_p90']:.0f}/{item['draws_p99']:.0f}"
         gaps = f"{item['band_gap_p50']:.4f}/{item['band_gap_p90']:.4f}/{item['band_gap_p99']:.4f}"
         lines.append(
@@ -445,13 +572,7 @@ def write_diagnostic() -> tuple[dict[str, object], ...]:
         )
     PROBE_DIR.mkdir(parents=True, exist_ok=True)
     DIAGNOSTIC_MD.write_text("\n".join(lines) + "\n", encoding="utf-8")
-    return payload
-
-
-def _json_payload(primary: ProbeRun, stability: tuple[ProbeRun, ...]) -> dict[str, object]:
-    payload = asdict(primary)
-    payload["stability"] = [asdict(item) for item in stability]
-    return payload
+    return natural
 
 
 def _jsonable(value: object) -> object:
@@ -466,66 +587,70 @@ def _jsonable(value: object) -> object:
 
 def _write_probe_json(primary: ProbeRun, stability: tuple[ProbeRun, ...]) -> None:
     path = PROBE_DIR / f"probe-{primary.instrument}.json"
-    path.write_text(
-        json.dumps(_jsonable(_json_payload(primary, stability)), indent=2),
-        encoding="utf-8",
-    )
+    payload = asdict(primary)
+    payload["stability"] = [asdict(item) for item in stability]
+    path.write_text(json.dumps(_jsonable(payload), indent=2), encoding="utf-8")
 
 
 def _stable_headline(probes: tuple[ProbeRun, ...]) -> str:
-    headlines = {probe.headline for probe in probes}
-    if "reference-resolving-power" in headlines:
-        return "reference-resolving-power"
-    if headlines == {"flip"}:
-        return "flip"
-    if "flip" in headlines:
-        return "fixture-tuning-artifact"
-    return "deep-negative"
+    return (
+        "adaptive-flip"
+        if all(probe.headline == "adaptive-flip" for probe in probes)
+        else "deep-negative"
+    )
+
+
+def _dominators_text(summary: StratumSummary) -> str:
+    return ", ".join(str(b) for b in summary.fixed_b_dominating_adaptive) or "none"
 
 
 def _write_verdict(eb: tuple[ProbeRun, ...], betting: tuple[ProbeRun, ...]) -> str:
     arm_headlines = {"eb": _stable_headline(eb), "betting": _stable_headline(betting)}
-    if "reference-resolving-power" in arm_headlines.values():
-        overall = "reference-resolving-power"
-        detail = "the engineered shallow tier could not be proven scored at B_ref=320."
-    elif "fixture-tuning-artifact" in arm_headlines.values():
-        overall = "fixture-tuning-artifact"
-        detail = "a flip was sensitive to the deep:shallow ratio."
-    elif "flip" in arm_headlines.values():
-        overall = "flip"
-        detail = "at least one adaptive instrument met the fixed-B Pareto and false-stop gates."
-    else:
-        overall = "deep-negative"
-        detail = "no adaptive instrument met the fixed-B Pareto and false-stop gates."
-
+    overall = (
+        "deep-negative"
+        if all(headline == "deep-negative" for headline in arm_headlines.values())
+        else "adaptive-flip"
+    )
+    detail = (
+        "fixed-B dominates both adaptive instruments inside the equivalence band"
+        if overall == "deep-negative"
+        else "at least one adaptive instrument beat the released fixed-B grid"
+    )
     lines = [
         "# Equivalence-Band Savings Verdict",
         "",
-        f"Headline verdict: **{overall}** — {detail}",
+        f"Headline verdict: **{overall}** — {detail}.",
         "",
-        "| arm | stable headline | primary ratio | scored | median draws | best savings | "
-        "fixed-B dominators | abstain | false stops | 95% CI |",
-        "| --- | --- | --- | ---: | ---: | ---: | --- | ---: | ---: | --- |",
+        "| arm | stable headline | primary ratio | scored/generated | median draws | "
+        "best savings | fixed-B dominators | abstain | ref resolved | false stops | 95% CI |",
+        "| --- | --- | --- | ---: | ---: | ---: | --- | ---: | ---: | ---: | --- |",
     ]
     for probe in (eb[0], betting[0]):
         ci = f"[{probe.summary.false_stop_ci[0]:.4f}, {probe.summary.false_stop_ci[1]:.4f}]"
-        dominators = ", ".join(str(b) for b in probe.summary.fixed_b_dominating_adaptive) or "none"
         lines.append(
             f"| {probe.instrument} | {arm_headlines[probe.instrument]} | {probe.ratio} | "
-            f"{probe.summary.scored} | {probe.summary.draws_p50:.0f} | "
-            f"{probe.summary.pareto_best_savings_ratio:.2f}x | {dominators} | "
-            f"{probe.summary.abstain_rate:.4f} | {probe.summary.false_stops} | {ci} |"
+            f"{probe.scored}/{probe.generated} | {probe.summary.draws_p50:.0f} | "
+            f"{probe.summary.pareto_best_savings_ratio:.2f}x | "
+            f"{_dominators_text(probe.summary)} | {probe.summary.abstain_rate:.4f} | "
+            f"{probe.reference_resolved_fraction:.3f} | {probe.summary.false_stops} | {ci} |"
         )
     lines.extend(
         [
             "",
             (
-                f"Precheck selected shallow |Delta| ~= {eb[0].precheck.shallow_abs_delta}; "
-                f"deep mean required draws {eb[0].precheck.deep_mean_required_draws:.1f}, "
-                f"shallow mean required draws {eb[0].precheck.shallow_mean_required_draws:.1f}."
+                f"Fixture cap: |Delta| <= {FIXTURE_MAX_ABS_DELTA:.3f}; "
+                f"primary spread {eb[0].abs_delta_spread:.4f}; "
+                f"minimum band gap {eb[0].min_band_gap:.4f}."
             ),
             (
-                "The headline is mechanically derived from the JSON fields and checked "
+                "Mechanism: EB has w_ad(B_ref)="
+                f"{eb[0].mechanism.eb_width_at_b_ref:.4f} > delta={DEFAULT_DELTA:.4f}; "
+                "betting resolves below B_ref, but its median fixed B*="
+                f"{betting[0].mechanism.cheapest_fixed_equivalent_median:.0f} is below "
+                f"its adaptive median {betting[0].summary.draws_p50:.0f}."
+            ),
+            (
+                "The headline is mechanically derived from probe JSON fields and checked "
                 f"across ratios {', '.join(probe.ratio for probe in eb)}."
             ),
         ]
@@ -536,49 +661,31 @@ def _write_verdict(eb: tuple[ProbeRun, ...], betting: tuple[ProbeRun, ...]) -> s
 
 def run_and_write_probe() -> str:
     PROBE_DIR.mkdir(parents=True, exist_ok=True)
-    write_diagnostic()
     all_probes: dict[AdaptiveInstrument, tuple[ProbeRun, ...]] = {}
-    prechecks = {
-        (deep, shallow): precheck_region(
-            deep_ratio=deep,
-            shallow_ratio=shallow,
-            cases_per_ratio=PROBE_CASES_PER_RATIO,
-        )
-        for deep, shallow in PROBE_RATIOS
-    }
     for instrument in ("eb", "betting"):
-        probe_list: list[ProbeRun] = []
-        for deep, shallow in PROBE_RATIOS:
-            probe_list.append(
-                run_probe(
-                    instrument=instrument,
-                    deep_ratio=deep,
-                    shallow_ratio=shallow,
-                    precheck=prechecks[(deep, shallow)],
-                )
-            )
-        probes = tuple(probe_list)
+        probes = tuple(
+            run_probe(instrument=instrument, center_ratio=center, offset_ratio=offset)
+            for center, offset in PROBE_RATIOS
+        )
         _write_probe_json(probes[0], probes)
         all_probes[instrument] = probes
+    write_diagnostic(all_probes["eb"][0], all_probes["betting"][0])
     return _write_verdict(all_probes["eb"], all_probes["betting"])
 
 
 def deterministic_probe_signature() -> tuple[object, ...]:
-    precheck = precheck_region()
     probe = run_probe(
         instrument="betting",
-        deep_ratio=1,
-        shallow_ratio=1,
-        precheck=precheck,
-        cases_per_ratio=PRECHECK_CASES_PER_RATIO,
+        center_ratio=1,
+        offset_ratio=1,
+        cases_per_ratio=DETERMINISM_CASES_PER_RATIO,
     )
     return (
-        precheck.shallow_abs_delta,
-        round(precheck.deep_mean_required_draws, 6),
-        round(precheck.shallow_mean_required_draws, 6),
         probe.summary.scored,
         probe.summary.false_stops,
         probe.summary.draws_p50,
-        round(probe.summary.pareto_best_savings_ratio, 6),
+        tuple(probe.summary.fixed_b_dominating_adaptive),
+        round(probe.mechanism.fixed_plateau_gap, 6),
+        round(probe.mechanism.cheapest_fixed_equivalent_median, 6),
         probe.headline,
     )
