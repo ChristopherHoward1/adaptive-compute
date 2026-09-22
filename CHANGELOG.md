@@ -3,6 +3,11 @@
 All notable changes to this project are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and versions use CalVer
 (`YYYY.M.MICRO`). Entries below are written only by `scripts/release.sh`.
+## [2026.9.5] - 2026-09-22
+
+- Add an offline equivalence-band probe (`eval --equiv-probe`) that measures the
+- Confirm-delta: none
+
 ## [2026.9.4] - 2026-09-21
 
 - Add a Waudby-Smith–Ramdas betting confidence-sequence band as a selectable adaptive instrument and re-run the §7/§8 gates under both bands over one shared bootstrap stream, testing whether the v0 empirical-Bernstein H1 savings negative survives a tighter anytime-valid instrument.
