@@ -1,9 +1,9 @@
-No CRITICAL or HIGH findings.
+Findings:
 
-MEDIUM: `src/adaptive_compute/equiv_probe.py` in `run_and_write_probe` recomputes the resolvability precheck separately for each deep:shallow ratio. Because each precheck can select a different `shallow_abs_delta`, the “stability across ratios” check is not purely varying mixture ratio; it may also vary shallow-case difficulty. That weakens the acceptance criterion, though it does not obviously invalidate the submitted result.
+- MEDIUM: [src/adaptive_compute/equiv_probe.py:377] `mechanism_diagnostic()` is run over all generated fixture cases, not the scored set used for the savings verdict. The plan requires the mechanism guards and curves “on the scored in-band cases.” Because the feasibility guard allows less than 100% reference resolution, a future fixture could pass with up to 5% unscored cases while the diagnostic plateau/crossing medians include those unscored cases. That would make the reported mechanism population differ from the verdict population.
 
-MEDIUM: `run_probe` summarizes only `scored_equivalent` runs, so any non-equivalent or unresolved primary cases are dropped before `_summarize_stratum`. The production path’s precheck appears intended to prevent this for shallow cases, but the JSON/verdict do not preserve the original denominator, so a future fixture regression could look like a smaller clean scored set unless separately caught.
+- MEDIUM: [src/adaptive_compute/equiv_probe.py:570] `verdict.md` is derived from in-memory `ProbeRun` objects after writing JSON, not by reading the JSON artifacts. The values currently come from the same objects, so this is not behaviorally wrong today, but it does not fully satisfy the “headline is computed from the JSON” contract and would miss serialization/artifact drift.
 
-Overall, the implementation stays within the declared footprint, leaves released paths alone, reuses `_summarize_stratum`, `fixed_b_sweep`, and `pareto_verdict`, and has no blocking correctness issue that I can substantiate from the diff.
+No CRITICAL or HIGH findings. The implementation otherwise stays inside the declared footprint, reuses the released savings helpers/grid, preserves `BATTERY`, and the per-instrument EB vs betting asymmetry is represented correctly.
 
 Codex verdict: APPROVE
