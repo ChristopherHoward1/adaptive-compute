@@ -1,6 +1,6 @@
 # Betting-CS re-test of the v0 H1 negative
 
-**Slug:** betting-cs-retest · **Date:** 2026-09-21 · **Status:** approved
+**Slug:** betting-cs-retest · **Date:** 2026-09-21 · **Status:** implemented
 
 ## Goal
 
@@ -147,3 +147,18 @@ Cold `plan-reviewer` (fresh read-only Opus subagent) — verdict **REVISE**, 5 f
 No disagreements to route to the Owner.
 
 Plan verdict: **APPROVE** (post-revision)
+
+### /3-review — implementation review (5 rounds)
+
+Two cold reviewers per round: the integration `code-reviewer` (calibration anchor) and Codex (`codex-review.sh`).
+
+- **R1** — both REQUEST CHANGES. Shared HIGH: the EB arm re-tuned off v0's `B_max=2048`, and `eval --run` would overwrite the protected v0 artifact with divergent numbers. Plus two vacuous validity tests (predictability, drop-in stream equivalence) and a headline mislabel. Codex also raised a grid-inversion HIGH; the anchor cleared the WSR construction as sound and anytime-valid, so it was **deferred** (see `deferrals.md` D-grid: keep the grid method + a `ponytail:` comment; empirically 0 false stops over ~8000 seeds).
+- **R2** — both APPROVE. One MEDIUM remained: the knowledge doc misreported the EB baseline medians (`704/384` → corrected to `768/448`, matching the artifact).
+- **R3** — anchor APPROVE; Codex REQUEST CHANGES (HIGH), re-raising that the global `DEFAULT_BATCH` change altered the default `--run`/EB tuning procedure. Owner consulted (open HIGH at the round cap): chose to fix for a genuine dual-APPROVE.
+- **R4** — anchor APPROVE (3rd consecutive); Codex REQUEST CHANGES (HIGH) that *contradicted* its R3 ask (now objecting to `b=32` being in the EB set). Root cause: a single shared EB candidate set can't serve both `--run` (needs v0's set) and `--compare` (needs `b=64` pinned). Owner authorized the decoupling fix.
+- **R5** — **both APPROVE.** Decoupled EB tuning via an optional `candidates` override: `--run` keeps v0's default set (reproduces v0); `--compare`'s EB arm passes explicit `b=64` candidates, enforcing the A/B invariant in code. Numbers unchanged (EB 128/768/448, betting 64/192/128, NO flip). Residual LOWs (cosmetic `b=32` literal vs `DEFAULT_BATCH` symbol; A5 measure-zero edge) recorded, non-blocking.
+
+Gate green (188 shell + 49 pytest + ruff/mypy/`eval --check`) on the orchestrator's own run every round. Footprint clean throughout; released v0 `work/adaptive-procedure/results.*` never altered (empty diff).
+
+Code-review verdict: APPROVE
+Codex-review verdict: APPROVE
