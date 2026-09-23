@@ -18,7 +18,7 @@ Python 3.12 (`src/` layout) for the research code, plus the agentic-coding harne
 - `scripts/` — the deterministic layer: `gate.sh` (stack-detecting check runner), `worktree.sh`, `agent-exec.sh`, `fan-exec.sh`, `codex-review.sh`, `release.sh`, `state.sh`, `archi-fresh.sh`. `worktree.sh` and `codex-review.sh` bound their best-effort `git fetch origin` under `timeout`/`gtimeout` when one is on PATH (default 30s, overridable via `WORKTREE_FETCH_TIMEOUT`), falling back to an unbounded call when neither exists. `gate.d/*.sh` are auto-run hooks: `test-scripts.sh` (shell smoke suite), `py-quality.sh` (ruff format-check + mypy), `ds-hygiene.sh` and `nb-clean.sh` (ML profile hygiene). `gate.d/examples/` holds the un-enabled originals.
 - `profiles/` — `software` / `machine-learning` (active) / `database` / `work`.
 - `VERSION` / `CHANGELOG.md` — CalVer + Keep-a-Changelog; written only by `release.sh`. Seeded at `2026.8.0` so the first release computes cleanly.
-- `knowledge/` — cold-tier docs, loaded only on citation (empty but for a README).
+- `knowledge/` — cold-tier docs, loaded only on citation.
 - `.github/workflows/ci.yml` — runs the shell smoke suite + gate on push/PR.
 - `AGENTS.md` — the implementer's contract.
 
@@ -40,7 +40,7 @@ Python 3.12 (`src/` layout) for the research code, plus the agentic-coding harne
 
 ## Verification
 
-`bash scripts/gate.sh` — required-tool preflight (`shellcheck`), shellcheck over tracked `*.sh`, `ruff check .`, `pytest -q`, plus `gate.d/` hooks (`test-scripts.sh` shell smoke suite, `py-quality.sh` format+types, `eval.sh`, `ds-hygiene.sh`, `nb-clean.sh`). CI runs the gate on push.
+`bash scripts/gate.sh` — required-tool preflight (`shellcheck`), shellcheck over tracked `*.sh`, `ruff check .`, `pytest -q` with a one-shot `-p no:capture` retry if pytest dies by signal, plus `gate.d/` hooks (`test-scripts.sh` shell smoke suite, `py-quality.sh` format+types, `eval.sh`, `ds-hygiene.sh`, `nb-clean.sh`). CI runs the gate on push.
 
 ### ML profile declarations
 

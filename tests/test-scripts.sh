@@ -1245,6 +1245,98 @@ setup_gate_fixture gate-python-no-tests
 )
 check "gate does not report skipped pytest when no tests match" bash -c "cd '$GATE_REPO' && out=\$(PATH='$GATE_BIN' bash scripts/gate.sh 2>&1); grep -Fq '⊘ skipped: ruff (not installed)' <<<\"\$out\" && ! grep -Fq 'skipped: pytest' <<<\"\$out\""
 
+setup_gate_fixture gate-pytest-exit-139-retry
+gate_pytest_log="$TMP/gate-pytest-exit-139-retry/pytest.log"
+cat >"$GATE_BIN/pytest" <<EOF
+#!/usr/bin/env bash
+echo "\$*" >>"$gate_pytest_log"
+[[ " \$* " == *" no:capture "* ]] && exit 0
+exit 139
+EOF
+chmod +x "$GATE_BIN/pytest"
+(
+  cd "$GATE_REPO" || exit 1
+  mkdir -p tests
+  printf '[project]\nname = "fixture"\n' >pyproject.toml
+  printf 'def test_marker():\n    pass\n' >tests/test_x.py
+  git add pyproject.toml tests/test_x.py
+  git commit -qm pytest-marker
+)
+check "gate retries pytest once after exit 139 and then passes" bash -c "cd '$GATE_REPO' && out=\$(PATH='$GATE_BIN' bash scripts/gate.sh 2>&1); status=\$?; [[ \"\$status\" -eq 0 ]] && grep -Fq '⚠ pytest died by signal (exit 139)' <<<\"\$out\" && grep -Fq 'GATE: PASS' <<<\"\$out\" && [[ \$(wc -l < '$gate_pytest_log') -eq 2 ]] && sed -n '1p' '$gate_pytest_log' | grep -Fx -- '-q' && sed -n '2p' '$gate_pytest_log' | grep -Fx -- '-q -p no:capture'"
+
+setup_gate_fixture gate-pytest-real-signal-retry
+gate_pytest_log="$TMP/gate-pytest-real-signal-retry/pytest.log"
+cat >"$GATE_BIN/pytest" <<EOF
+#!/usr/bin/env bash
+echo "\$*" >>"$gate_pytest_log"
+[[ " \$* " == *" no:capture "* ]] && exit 0
+kill -SEGV \$\$
+EOF
+chmod +x "$GATE_BIN/pytest"
+(
+  cd "$GATE_REPO" || exit 1
+  mkdir -p tests
+  printf '[project]\nname = "fixture"\n' >pyproject.toml
+  printf 'def test_marker():\n    pass\n' >tests/test_x.py
+  git add pyproject.toml tests/test_x.py
+  git commit -qm pytest-marker
+)
+check "gate retries pytest once after real signal death and then passes" bash -c "cd '$GATE_REPO' && out=\$(PATH='$GATE_BIN' bash scripts/gate.sh 2>&1); status=\$?; [[ \"\$status\" -eq 0 ]] && grep -Fq '⚠ pytest died by signal (exit 139)' <<<\"\$out\" && grep -Fq 'GATE: PASS' <<<\"\$out\" && [[ \$(wc -l < '$gate_pytest_log') -eq 2 ]] && sed -n '1p' '$gate_pytest_log' | grep -Fx -- '-q' && sed -n '2p' '$gate_pytest_log' | grep -Fx -- '-q -p no:capture'"
+
+setup_gate_fixture gate-pytest-failure-no-retry
+gate_pytest_log="$TMP/gate-pytest-failure-no-retry/pytest.log"
+cat >"$GATE_BIN/pytest" <<EOF
+#!/usr/bin/env bash
+echo "\$*" >>"$gate_pytest_log"
+exit 1
+EOF
+chmod +x "$GATE_BIN/pytest"
+(
+  cd "$GATE_REPO" || exit 1
+  mkdir -p tests
+  printf '[project]\nname = "fixture"\n' >pyproject.toml
+  printf 'def test_marker():\n    pass\n' >tests/test_x.py
+  git add pyproject.toml tests/test_x.py
+  git commit -qm pytest-marker
+)
+check "gate does not retry ordinary pytest failure" bash -c "cd '$GATE_REPO' && out=\$(PATH='$GATE_BIN' bash scripts/gate.sh 2>&1); status=\$?; [[ \"\$status\" -ne 0 ]] && grep -Fq '✗ FAILED: pytest -q' <<<\"\$out\" && ! grep -Fq '⚠ pytest died by signal' <<<\"\$out\" && [[ \$(wc -l < '$gate_pytest_log') -eq 1 ]] && sed -n '1p' '$gate_pytest_log' | grep -Fx -- '-q'"
+
+setup_gate_fixture gate-pytest-persistent-crash
+gate_pytest_log="$TMP/gate-pytest-persistent-crash/pytest.log"
+cat >"$GATE_BIN/pytest" <<EOF
+#!/usr/bin/env bash
+echo "\$*" >>"$gate_pytest_log"
+exit 139
+EOF
+chmod +x "$GATE_BIN/pytest"
+(
+  cd "$GATE_REPO" || exit 1
+  mkdir -p tests
+  printf '[project]\nname = "fixture"\n' >pyproject.toml
+  printf 'def test_marker():\n    pass\n' >tests/test_x.py
+  git add pyproject.toml tests/test_x.py
+  git commit -qm pytest-marker
+)
+check "gate fails after one retry when pytest keeps crashing" bash -c "cd '$GATE_REPO' && out=\$(PATH='$GATE_BIN' bash scripts/gate.sh 2>&1); status=\$?; [[ \"\$status\" -ne 0 ]] && grep -Fq '⚠ pytest died by signal (exit 139)' <<<\"\$out\" && grep -Fq '✗ FAILED: pytest -q -p no:capture' <<<\"\$out\" && [[ \$(wc -l < '$gate_pytest_log') -eq 2 ]] && sed -n '1p' '$gate_pytest_log' | grep -Fx -- '-q' && sed -n '2p' '$gate_pytest_log' | grep -Fx -- '-q -p no:capture'"
+
+setup_gate_fixture gate-pytest-healthy
+gate_pytest_log="$TMP/gate-pytest-healthy/pytest.log"
+cat >"$GATE_BIN/pytest" <<EOF
+#!/usr/bin/env bash
+echo "\$*" >>"$gate_pytest_log"
+exit 0
+EOF
+chmod +x "$GATE_BIN/pytest"
+(
+  cd "$GATE_REPO" || exit 1
+  mkdir -p tests
+  printf '[project]\nname = "fixture"\n' >pyproject.toml
+  printf 'def test_marker():\n    pass\n' >tests/test_x.py
+  git add pyproject.toml tests/test_x.py
+  git commit -qm pytest-marker
+)
+check "gate leaves healthy pytest path unchanged" bash -c "cd '$GATE_REPO' && out=\$(PATH='$GATE_BIN' bash scripts/gate.sh 2>&1); status=\$?; [[ \"\$status\" -eq 0 ]] && grep -Fq '▶ pytest -q' <<<\"\$out\" && grep -Fq 'GATE: PASS' <<<\"\$out\" && ! grep -Fq '⚠ pytest died by signal' <<<\"\$out\" && [[ \$(wc -l < '$gate_pytest_log') -eq 1 ]] && sed -n '1p' '$gate_pytest_log' | grep -Fx -- '-q'"
+
 setup_gate_fixture gate-node-runs
 write_fake_tool "$GATE_BIN/node"
 write_fake_tool "$GATE_BIN/npm"
