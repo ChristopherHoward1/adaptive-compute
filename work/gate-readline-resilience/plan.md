@@ -1,6 +1,6 @@
 # Gate readline resilience
 
-**Slug:** gate-readline-resilience · **Date:** 2026-09-22 · **Status:** approved
+**Slug:** gate-readline-resilience · **Date:** 2026-09-22 · **Status:** implemented
 
 ## Goal
 
@@ -97,3 +97,12 @@ Round 2 (a fresh plan-reviewer on rev 2): APPROVE. It verified that all six roun
 3. The verdict line needed updating. Done.
 
 Plan verdict: APPROVE
+
+### Code review (round 1)
+
+The fresh `code-reviewer` returned APPROVE, and Codex returned APPROVE (`codex-review.md`). All eight acceptance criteria were verified as met, and the gate passed with `PYTEST_ADDOPTS` unset. In the implementer's sandbox the real segfault occurred (`Segmentation fault: 11  pytest -q`), and the `⚠` retry recovered to green. LOW notes, recorded here and not sent back:
+1. The `gate.sh:24-25` comment says "exit 139", but the trigger is any code above 128. An OOM kill (137) would also be retried once. This is within the plan's accepted Known limit, and the `⚠` line still appears.
+2. The five new fixture cases in `tests/test-scripts.sh` repeat the same setup block. This is style only.
+
+Code-review verdict: APPROVE
+Codex-review verdict: APPROVE
