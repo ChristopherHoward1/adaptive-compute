@@ -3,6 +3,11 @@
 All notable changes to this project are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and versions use CalVer
 (`YYYY.M.MICRO`). Entries below are written only by `scripts/release.sh`.
+## [2026.9.6] - 2026-09-23
+
+- Gate retries pytest once with `-p no:capture` when pytest dies by a signal (the native-`readline` segfault under pytest capture), so the known sandbox crash no longer fails the gate or needs a manual workaround; ordinary (non-signal) test failures are never retried.
+- Confirm-delta: none
+
 ## [2026.9.5] - 2026-09-22
 
 - Add an offline equivalence-band probe (`eval --equiv-probe`) that measures the
