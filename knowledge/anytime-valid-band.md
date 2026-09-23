@@ -104,5 +104,36 @@ false because the equivalent stratum still had fixed-B dominators under the shar
 fixed-B grid.
 
 For the follow-up equivalence-band retest and its structural-negative scoping, see
-`knowledge/equivalence-band-savings.md`: adaptive savings are a directional-decision
-story here, not an equivalence-decision story.
+`knowledge/equivalence-band-savings.md`. The directional-savings hope it left open is
+closed by the next section.
+
+## The mean estimand is closed-form: a zero-draw rule dominates
+
+`E*[Delta*]` is the bootstrap mean of the paired metric difference, and for AUC it sits
+within bootstrap bias of the plug-in `Delta(E) = M(A,E) - M(B,E)`, which is computable
+exactly from the frozen evaluation set with **zero** draws. Measured 2026-09-23 on 150
+held-out seeds per non-boundary member (seeds `+10_000..`, reference seed
+`90_000 + seed`, `B_ref = 320`): `|E*[Delta*] - Delta(E)|` median `0.00025`, max
+`0.0018` (vs `delta = 0.05`), and `decision_from_delta(Delta(E), delta)` agreed with the
+fixed-budget reference on **586/586** scored cases (14 reference-unresolved).
+
+Consequence: any savings claim for an adaptive mean-CS procedure is Pareto-dominated by
+the zero-draw plug-in rule. Its draws buy Monte-Carlo precision on a number that needs
+none. This holds for directional decisions as much as for equivalence ones.
+
+Fixed-B is also cheap on directional decisions. In the released betting A/B
+(`work/betting-cs-retest/results-betting.json`), fixed-B at `B=32` agreed with the
+reference on 99.4% of scored easy+moderate cases, with 0 false stops. Pooling strata
+technically passes the §8 gate, but only because 25–34 cases (0.4–0.6%) stay unresolved
+under the percentile interval at every budget while the mean CS decides them. That is a
+functional mismatch, not a saving. Do not present it as a positive result.
+
+Where an MC-budget story can still have content:
+
+- **The reference's own functional.** The reference decides `A_better` iff
+  `P*(Delta* <= delta) < alpha/2`, which genuinely needs draws. A Gandy-style sequential
+  test on that tail probability needs roughly `log(1/alpha)/(alpha/2)` (~120+) draws to
+  certify, so it likely still loses to `B=32` on savings. It could still be a
+  reliability result.
+- **Estimands with no closed form**, such as SHAP attributions (the deferred
+  explainability consumer), where each draw genuinely buys accuracy.

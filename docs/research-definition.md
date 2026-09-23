@@ -172,6 +172,14 @@ Alternatives considered and deferred (one line each):
   legitimate user input (equivalence margins are set by users).
 - **Tuning against the reference data** — hyperparameters are frozen before the
   evaluation battery; the battery is generated from held-out seeds.
+- **Closed-form estimand (added 2026-09-23, realized).** An adaptive band on the
+  bootstrap *mean* `E*[Δ*]` estimates a quantity that equals the plug-in `Δ(E)` up to
+  bootstrap bias. The plug-in is computable exactly with zero draws. A zero-draw
+  plug-in rule matched the reference on 586/586 scored held-out cases, so savings
+  claims for the mean-CS procedure are vacuous. Any MC-budget claim must target an
+  estimand that genuinely needs draws: the reference's tail probability
+  `P*(Δ* ≤ δ)`, or a quantity with no closed form such as SHAP. See
+  `knowledge/anytime-valid-band.md`.
 
 ## 8. Expected failure modes
 

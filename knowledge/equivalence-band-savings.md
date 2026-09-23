@@ -21,7 +21,8 @@ betting had dominators `32, 64, 128`. Both arms had zero abstentions, zero false
 reference-resolved fraction 1.000 on the scored fixture, so the negative is not an
 abstention or attrition artifact.
 
-Scope this narrowly. Adaptive Monte Carlo can still save draws for directional decisions
-under difficulty heterogeneity, where a confidence sequence can cross a one-sided
-threshold early. This note only claims the equivalence-band result: for in-band decisions,
-the fixed-width percentile functional is the cheaper tool in the measured fixture.
+This note was scoped to the equivalence band. It left open the hope that adaptive Monte
+Carlo still saves draws on directional decisions. That hope is closed:
+`knowledge/anytime-valid-band.md` → "The mean estimand is closed-form" shows that a
+zero-draw plug-in rule dominates the mean-CS procedure on every decision type, and that
+fixed-B at `B=32` already agrees with the reference on 99.4% of directional cases.
