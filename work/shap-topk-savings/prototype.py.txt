@@ -1,0 +1,107 @@
+# rev-2 prototype at pinned constants: natural sample, shared stream, fixed-horizon certificates
+import sys, time, itertools, numpy as np
+from math import factorial as F
+D=12; K=3; BG=64; ALPHA=0.05; B=32; MMAX=16384; EPS=0.01
+GRID=np.linspace(0,1,2001); FG=np.linspace(0,1,1001)
+LA=ALPHA/D
+def sig(z): return 1/(1+np.exp(-z))
+def make_case(seed):
+    r=np.random.default_rng(seed)
+    w=r.normal(0,1.5,D)*r.uniform(0.2,1.5); V=np.triu(r.normal(0,0.6,(D,D)),1)
+    x=r.normal(0,1,D); bg=r.normal(0,1,(BG,D))
+    f=lambda X: sig(X@w+np.einsum('ni,ij,nj->n',X,V,X))
+    return f,x,bg,w,V
+masks=np.array(list(itertools.product([0,1],repeat=D)),bool); s_=masks.sum(1)
+WT=np.array([F(k)*F(D-k-1)/F(D) for k in range(D)])
+def exact(f,x,bg):
+    X=np.where(masks[:,None,:],x,bg[None]).reshape(-1,D); vals=f(X).reshape(len(masks),BG).mean(1)
+    phi=np.zeros(D)
+    for j in range(D):
+        i0=np.where(~masks[:,j])[0]; i1=i0+(1<<(D-1-j)); phi[j]=(WT[s_[i0]]*(vals[i1]-vals[i0])).sum()
+    return phi
+def quad_shap(w,V,x,bg):
+    phi=w*(x-bg.mean(0))
+    for j in range(D):
+        for k in range(j+1,D):
+            zj,zk=bg[:,j],bg[:,k]; h=lambda a,b: V[j,k]*a*b
+            phi[j]+=0.5*((h(x[j],x[k])-h(zj,x[k]))+(h(x[j],zk)-h(zj,zk))).mean()
+            phi[k]+=0.5*((h(x[j],x[k])-h(x[j],zk))+(h(zj,x[k])-h(zj,zk))).mean()
+    return phi
+def stream(f,x,bg,n,r):
+    out=np.empty((n,D))
+    for s in range(0,n,4096):
+        m=min(4096,n-s); P=np.argsort(r.random((m,D)),1); rank=np.argsort(P,1)
+        z=bg[r.integers(BG,size=m)]
+        mask=rank[:,None,:]<np.arange(D+1)[None,:,None]
+        v=f(np.where(mask,x,z[:,None,:]).reshape(-1,D)).reshape(m,D+1)
+        dv=np.diff(v,axis=1); o=np.empty((m,D)); np.put_along_axis(o,P,dv,1); out[s:s+m]=o
+    return out
+def absint(lo,hi):
+    alo=np.where((lo>0)|(hi<0),np.minimum(abs(lo),abs(hi)),0.0); return alo,np.maximum(abs(lo),abs(hi))
+def topk(v): return frozenset(np.argsort(-v)[:K])
+def ok(S,a): return min(a[list(S)])>=np.sort(a)[::-1][K-1]-EPS
+def certify(mu,lo,hi):
+    alo,ahi=absint(lo,hi); T=topk(np.abs(mu)); R=[j for j in range(D) if j not in T]
+    return T if min(alo[list(T)])>max(ahi[R])-EPS else None
+def adaptive(dr):  # anytime WSR (running max), vectorized over features
+    cp=np.zeros((D,GRID.size)); cm=cp.copy(); mx=cp.copy(); mean=np.full(D,.5); m2=np.zeros(D); n=0
+    lg=np.log(1/LA)
+    for t in range(0,MMAX,B):
+        for d in dr[t:t+B]:
+            xs=(d+1)/2
+            if n>=2:
+                var=np.maximum(m2/(n-1),1e-6)[:,None]; g=np.abs(mean[:,None]-GRID)
+                lam=np.minimum(g/(var+g**2),0.5/np.maximum(GRID,1-GRID))
+                c=xs[:,None]-GRID; cp+=np.log1p(lam*c); cm+=np.log1p(-lam*c)
+                mx=np.maximum(mx,np.logaddexp(cp,cm)-np.log(2))
+            n+=1; dl=xs-mean; mean+=dl/n; m2+=dl*(xs-mean)
+        lo=np.empty(D); hi=np.empty(D)
+        for j in range(D):
+            sv=GRID[mx[j]<lg]; lo[j],hi[j]=(2*sv[0]-1,2*sv[-1]-1) if sv.size else (-1,1)
+        S=certify(dr[:n].mean(0),lo,hi)
+        if S is not None: return S,n
+    return None,MMAX
+def fixed_betting(dr,M):  # fixed-horizon hedged WSR CI: capital at M, lambda tuned to M, predictable
+    X=(dr[:M]+1)/2; cs=np.cumsum(X,0); cs2=np.cumsum(X**2,0); t=np.arange(1,M+1)[:,None]
+    pm=np.vstack([np.full((1,D),.5),(cs/t)[:-1]]); pv=np.vstack([np.full((1,D),.25),np.maximum(cs2/t-(cs/t)**2,1e-6)[:-1]])
+    lam=np.sqrt(2*np.log(2/LA)/(pv*M))  # (M,D)
+    lcp=np.zeros((D,FG.size)); lcm=lcp.copy(); cap=0.5/np.maximum(FG,1-FG)
+    for s in range(0,M,2048):
+        Xc=X[s:s+2048]; L=lam[s:s+2048]
+        for j in range(D):
+            l=np.minimum(L[:,j:j+1],cap); c=Xc[:,j:j+1]-FG
+            lcp[j]+=np.log1p(l*c).sum(0); lcm[j]+=np.log1p(-l*c).sum(0)
+    K_=np.logaddexp(lcp,lcm)-np.log(2); lo=np.empty(D); hi=np.empty(D)
+    for j in range(D):
+        sv=FG[K_[j]<np.log(1/LA)]; lo[j],hi[j]=(2*sv[0]-1,2*sv[-1]-1) if sv.size else (-1,1)
+    return lo,hi
+def fixed_eb(dr,M):
+    sub=dr[:M]; mu=sub.mean(0); v=sub.var(0,ddof=1); L=np.log(2/LA); rad=np.sqrt(2*v*L/M)+14*L/(3*(M-1)); return mu-rad,mu+rad
+GRIDM=(512,1024,2048,4096,8192,16384,32768,65536)
+N=int(sys.argv[1]); START=100_000; rows=[]; t0=time.time()
+for c in range(N):
+    f,x,bg,w,V=make_case(START+c); phi=exact(f,x,bg); a=np.abs(phi); s=np.sort(a)[::-1]; g=s[K-1]-s[K]
+    st='tie' if g<EPS else 'hard' if g<3*EPS else 'mod' if g<10*EPS else 'easy'
+    dr=stream(f,x,bg,max(GRIDM),np.random.default_rng(START+c+7))
+    S,n=adaptive(dr)
+    cert={}; unc={}
+    for M in GRIDM:
+        mu=dr[:M].mean(0); unc[M]=ok(topk(np.abs(mu)),a)
+        best=None
+        for lo,hi in (fixed_betting(dr,M),fixed_eb(dr,M)):
+            T=certify(mu,lo,hi)
+            if T is not None: best=ok(T,a); break
+        cert[M]=best
+    rows.append(dict(st=st,g=g,n=n,ad=None if S is None else ok(S,a),cert=cert,unc=unc,q=ok(topk(np.abs(quad_shap(w,V,x,bg))),a)))
+    print(c,st,round(g,4),n,rows[-1]['ad'],{M:cert[M] for M in GRIDM},flush=True)
+print("time",round(time.time()-t0))
+ns=np.array([r['n'] for r in rows]); ab=np.mean([r['ad'] is None for r in rows])
+print("strata",{k:sum(r['st']==k for r in rows) for k in('tie','hard','mod','easy')})
+print("adaptive median",np.median(ns),"mean(abst@Mmax)",ns.mean().round(0),"abstain",ab.round(3),"wrong",sum(r['ad'] is False for r in rows))
+ex=2**D*BG/(D+1); print("exact perms-equiv",round(ex),"fallback mean",round(ns.mean()+ab*ex),"ratio",round((ns.mean()+ab*ex)/ex,3))
+print("quad-shap surrogate eps-correct",np.mean([r['q'] for r in rows]))
+for M in GRIDM:
+    print(f" M={M}: certified nondec {np.mean([r['cert'][M] is None for r in rows]):.3f} wrong {sum(r['cert'][M] is False for r in rows)} | uncertified err {1-np.mean([r['unc'][M] for r in rows]):.3f}")
+for k in('tie','hard','mod','easy'):
+    sub=[r for r in rows if r['st']==k]
+    if sub: print(k,len(sub),"adaptive median",np.median([r['n'] for r in sub]),"abst",sum(r['ad'] is None for r in sub))

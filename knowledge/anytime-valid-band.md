@@ -136,4 +136,5 @@ Where an MC-budget story can still have content:
   certify, so it likely still loses to `B=32` on savings. It could still be a
   reliability result.
 - **Estimands with no closed form**, such as SHAP attributions (the deferred
-  explainability consumer), where each draw genuinely buys accuracy.
+  explainability consumer), where each draw genuinely buys accuracy. This was probed at
+  plan stage and the savings were marginal: see `knowledge/shap-topk-savings.md`.

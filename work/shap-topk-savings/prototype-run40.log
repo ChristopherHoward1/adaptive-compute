@@ -1,0 +1,57 @@
+0 hard 0.0237 7360 True {512: None, 1024: None, 2048: None, 4096: None, 8192: np.True_, 16384: np.True_, 32768: np.True_, 65536: np.True_}
+1 tie 0.009 16384 None {512: None, 1024: None, 2048: None, 4096: None, 8192: None, 16384: np.True_, 32768: np.True_, 65536: np.True_}
+2 hard 0.025 2816 True {512: None, 1024: None, 2048: None, 4096: np.True_, 8192: np.True_, 16384: np.True_, 32768: np.True_, 65536: np.True_}
+3 easy 0.1058 416 True {512: np.True_, 1024: np.True_, 2048: np.True_, 4096: np.True_, 8192: np.True_, 16384: np.True_, 32768: np.True_, 65536: np.True_}
+4 tie 0.0 16384 None {512: None, 1024: None, 2048: None, 4096: None, 8192: None, 16384: None, 32768: np.True_, 65536: np.True_}
+5 hard 0.0148 16384 None {512: None, 1024: None, 2048: None, 4096: None, 8192: None, 16384: None, 32768: np.True_, 65536: np.True_}
+6 mod 0.0461 1696 True {512: None, 1024: None, 2048: np.True_, 4096: np.True_, 8192: np.True_, 16384: np.True_, 32768: np.True_, 65536: np.True_}
+7 mod 0.0432 2912 True {512: None, 1024: None, 2048: None, 4096: np.True_, 8192: np.True_, 16384: np.True_, 32768: np.True_, 65536: np.True_}
+8 hard 0.0177 2400 True {512: None, 1024: None, 2048: None, 4096: np.True_, 8192: np.True_, 16384: np.True_, 32768: np.True_, 65536: np.True_}
+9 hard 0.0109 6432 True {512: None, 1024: None, 2048: None, 4096: None, 8192: np.True_, 16384: np.True_, 32768: np.True_, 65536: np.True_}
+10 tie 0.0089 11840 True {512: None, 1024: None, 2048: None, 4096: None, 8192: np.True_, 16384: np.True_, 32768: np.True_, 65536: np.True_}
+11 tie 0.0085 13568 True {512: None, 1024: None, 2048: None, 4096: None, 8192: None, 16384: np.True_, 32768: np.True_, 65536: np.True_}
+12 tie 0.0035 16384 None {512: None, 1024: None, 2048: None, 4096: None, 8192: None, 16384: None, 32768: np.True_, 65536: np.True_}
+13 mod 0.038 3808 True {512: None, 1024: None, 2048: None, 4096: np.True_, 8192: np.True_, 16384: np.True_, 32768: np.True_, 65536: np.True_}
+14 tie 0.0067 16384 None {512: None, 1024: None, 2048: None, 4096: None, 8192: None, 16384: None, 32768: np.True_, 65536: np.True_}
+15 tie 0.0062 11456 True {512: None, 1024: None, 2048: None, 4096: None, 8192: None, 16384: np.True_, 32768: np.True_, 65536: np.True_}
+16 tie 0.0022 16384 None {512: None, 1024: None, 2048: None, 4096: None, 8192: None, 16384: None, 32768: np.True_, 65536: np.True_}
+17 hard 0.0227 4832 True {512: None, 1024: None, 2048: None, 4096: None, 8192: np.True_, 16384: np.True_, 32768: np.True_, 65536: np.True_}
+18 tie 0.0082 14432 True {512: None, 1024: None, 2048: None, 4096: None, 8192: None, 16384: np.True_, 32768: np.True_, 65536: np.True_}
+19 mod 0.0706 832 True {512: None, 1024: np.True_, 2048: np.True_, 4096: np.True_, 8192: np.True_, 16384: np.True_, 32768: np.True_, 65536: np.True_}
+20 hard 0.0176 8192 True {512: None, 1024: None, 2048: None, 4096: None, 8192: np.True_, 16384: np.True_, 32768: np.True_, 65536: np.True_}
+21 tie 0.0016 16384 None {512: None, 1024: None, 2048: None, 4096: None, 8192: None, 16384: None, 32768: np.True_, 65536: np.True_}
+22 mod 0.0341 1856 True {512: None, 1024: None, 2048: np.True_, 4096: np.True_, 8192: np.True_, 16384: np.True_, 32768: np.True_, 65536: np.True_}
+23 tie 0.01 10496 True {512: None, 1024: None, 2048: None, 4096: None, 8192: np.True_, 16384: np.True_, 32768: np.True_, 65536: np.True_}
+24 hard 0.0104 4512 True {512: None, 1024: None, 2048: None, 4096: np.True_, 8192: np.True_, 16384: np.True_, 32768: np.True_, 65536: np.True_}
+25 hard 0.0254 3520 True {512: None, 1024: None, 2048: None, 4096: np.True_, 8192: np.True_, 16384: np.True_, 32768: np.True_, 65536: np.True_}
+26 hard 0.018 5760 True {512: None, 1024: None, 2048: None, 4096: None, 8192: np.True_, 16384: np.True_, 32768: np.True_, 65536: np.True_}
+27 hard 0.0135 4576 True {512: None, 1024: None, 2048: None, 4096: None, 8192: np.True_, 16384: np.True_, 32768: np.True_, 65536: np.True_}
+28 hard 0.0287 4864 True {512: None, 1024: None, 2048: None, 4096: None, 8192: np.True_, 16384: np.True_, 32768: np.True_, 65536: np.True_}
+29 tie 0.009 7328 True {512: None, 1024: None, 2048: None, 4096: None, 8192: np.True_, 16384: np.True_, 32768: np.True_, 65536: np.True_}
+30 mod 0.0305 576 True {512: None, 1024: None, 2048: np.True_, 4096: np.True_, 8192: np.True_, 16384: np.True_, 32768: np.True_, 65536: np.True_}
+31 hard 0.0252 4160 True {512: None, 1024: None, 2048: None, 4096: np.True_, 8192: np.True_, 16384: np.True_, 32768: np.True_, 65536: np.True_}
+32 hard 0.0271 3360 True {512: None, 1024: None, 2048: None, 4096: np.True_, 8192: np.True_, 16384: np.True_, 32768: np.True_, 65536: np.True_}
+33 tie 0.0025 10240 True {512: None, 1024: None, 2048: None, 4096: None, 8192: np.True_, 16384: np.True_, 32768: np.True_, 65536: np.True_}
+34 hard 0.0137 1152 True {512: None, 1024: None, 2048: np.True_, 4096: np.True_, 8192: np.True_, 16384: np.True_, 32768: np.True_, 65536: np.True_}
+35 mod 0.0742 800 True {512: None, 1024: np.True_, 2048: np.True_, 4096: np.True_, 8192: np.True_, 16384: np.True_, 32768: np.True_, 65536: np.True_}
+36 hard 0.0298 1408 True {512: None, 1024: None, 2048: np.True_, 4096: np.True_, 8192: np.True_, 16384: np.True_, 32768: np.True_, 65536: np.True_}
+37 hard 0.0112 9600 True {512: None, 1024: None, 2048: None, 4096: None, 8192: np.True_, 16384: np.True_, 32768: np.True_, 65536: np.True_}
+38 mod 0.0674 736 True {512: None, 1024: np.True_, 2048: np.True_, 4096: np.True_, 8192: np.True_, 16384: np.True_, 32768: np.True_, 65536: np.True_}
+39 mod 0.0383 2144 True {512: None, 1024: None, 2048: np.True_, 4096: np.True_, 8192: np.True_, 16384: np.True_, 32768: np.True_, 65536: np.True_}
+time 8202
+strata {'tie': 13, 'hard': 17, 'mod': 9, 'easy': 1}
+adaptive median 4848.0 mean(abst@Mmax) 7119.0 abstain 0.175 wrong 0
+exact perms-equiv 20165 fallback mean 10648 ratio 0.528
+quad-shap surrogate eps-correct 0.65
+ M=512: certified nondec 0.975 wrong 0 | uncertified err 0.075
+ M=1024: certified nondec 0.900 wrong 0 | uncertified err 0.050
+ M=2048: certified nondec 0.750 wrong 0 | uncertified err 0.025
+ M=4096: certified nondec 0.550 wrong 0 | uncertified err 0.000
+ M=8192: certified nondec 0.250 wrong 0 | uncertified err 0.000
+ M=16384: certified nondec 0.150 wrong 0 | uncertified err 0.000
+ M=32768: certified nondec 0.000 wrong 0 | uncertified err 0.000
+ M=65536: certified nondec 0.000 wrong 0 | uncertified err 0.000
+tie 13 adaptive median 14432.0 abst 6
+hard 17 adaptive median 4576.0 abst 1
+mod 9 adaptive median 1696.0 abst 0
+easy 1 adaptive median 416.0 abst 0
