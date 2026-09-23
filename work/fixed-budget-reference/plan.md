@@ -1,6 +1,6 @@
 # Fixed-budget reference bootstrap decision procedure
 
-**Slug:** fixed-budget-reference · **Date:** 2026-09-19 · **Status:** implemented
+**Slug:** fixed-budget-reference · **Date:** 2026-09-19 · **Status:** released v2026.9.0
 
 ## Goal
 

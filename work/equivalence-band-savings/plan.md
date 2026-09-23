@@ -1,6 +1,6 @@
 # Equivalence-band savings: why fixed-B structurally beats adaptive inside [−δ,δ]
 
-**Slug:** equivalence-band-savings · **Date:** 2026-09-22 · **Status:** implemented (rev 3 — structural-negative reframe)
+**Slug:** equivalence-band-savings · **Date:** 2026-09-22 · **Status:** released v2026.9.5 (rev 3 — structural-negative reframe)
 
 ## Revision history (audit trail)
 

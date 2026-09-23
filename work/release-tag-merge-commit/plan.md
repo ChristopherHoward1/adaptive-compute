@@ -1,6 +1,6 @@
 # release-tag-merge-commit — tag the release commit by SHA, not origin/main's tip
 
-**Slug:** release-tag-merge-commit · **Date:** 2026-09-19 · **Status:** implemented
+**Slug:** release-tag-merge-commit · **Date:** 2026-09-19 · **Status:** released v2026.9.1
 
 ## Goal
 

@@ -1,6 +1,6 @@
 # Betting-CS re-test of the v0 H1 negative
 
-**Slug:** betting-cs-retest · **Date:** 2026-09-21 · **Status:** implemented
+**Slug:** betting-cs-retest · **Date:** 2026-09-21 · **Status:** released v2026.9.4
 
 ## Goal
 

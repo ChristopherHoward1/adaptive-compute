@@ -1,6 +1,6 @@
 # Research bootstrap: definition, prior-art, first falsifiable experiment
 
-**Slug:** research-bootstrap · **Date:** 2026-09-19 · **Status:** approved
+**Slug:** research-bootstrap · **Date:** 2026-09-19 · **Status:** merged (plain PR, no release)
 
 ## Goal
 

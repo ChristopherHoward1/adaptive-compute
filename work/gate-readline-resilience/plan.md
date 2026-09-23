@@ -1,6 +1,6 @@
 # Gate readline resilience
 
-**Slug:** gate-readline-resilience · **Date:** 2026-09-22 · **Status:** implemented
+**Slug:** gate-readline-resilience · **Date:** 2026-09-22 · **Status:** released v2026.9.6
 
 ## Goal
 
