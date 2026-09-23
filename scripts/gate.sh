@@ -21,6 +21,27 @@ run() {
   fi
 }
 
+# pytest can die in _readline_workaround before collection with exit 139.
+# Disabling capture skips that native-readline path on the single retry.
+run_pytest() {
+  local rc
+
+  echo "▶ pytest -q"
+  pytest -q
+  rc=$?
+  if [[ $rc -eq 0 ]]; then
+    return
+  fi
+  if [[ $rc -le 128 ]]; then
+    fail=1
+    echo "✗ FAILED: pytest -q"
+    return
+  fi
+
+  echo "⚠ pytest died by signal (exit $rc) — known native-readline crash under pytest capture; retrying once with -p no:capture"
+  run pytest -q -p no:capture
+}
+
 required_tools=
 if [[ ${GATE_REQUIRED_TOOLS+set} ]]; then
   required_tools=$GATE_REQUIRED_TOOLS
@@ -99,7 +120,7 @@ if [[ -f pyproject.toml || -f setup.py || -f requirements.txt ]]; then
   fi
   if compgen -G "tests/*" >/dev/null; then
     if command -v pytest >/dev/null; then
-      run pytest -q
+      run_pytest
     else
       skip pytest
     fi
