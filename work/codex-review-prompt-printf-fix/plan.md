@@ -1,6 +1,6 @@
 # Fix dropped severity taxonomy in the Codex review prompt
 
-**Slug:** codex-review-prompt-printf-fix · **Date:** 2026-09-20 · **Status:** implemented
+**Slug:** codex-review-prompt-printf-fix · **Date:** 2026-09-20 · **Status:** released v2026.9.2
 
 ## Goal
 

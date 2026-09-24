@@ -1,6 +1,6 @@
 # Adaptive Monte-Carlo stopping procedure + first-result eval harness
 
-**Slug:** adaptive-procedure · **Date:** 2026-09-20 · **Status:** reviewed
+**Slug:** adaptive-procedure · **Date:** 2026-09-20 · **Status:** released v2026.9.3
 
 ## Goal
 

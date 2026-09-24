@@ -57,45 +57,47 @@ and the fixed-budget reference run recovers it.
 - [`docs/experiment-design.md`](docs/experiment-design.md) — the synthetic
   battery, baselines, decision rule, and falsification criteria.
 
-## Current result (v2026.9.3)
+## Current result (v2026.9.6)
 
-The first experiment does not support H1.
+H1 is not supported. The research line is paused for a re-think.
 
-Decision agreement held. On every scored non-boundary case in the battery the
-adaptive procedure resolved and returned the reference decision. The false-stop
-rate was 0 in each difficulty stratum (Wilson upper 95% bound below α = 0.05),
-including the heavy-tailed cases, and the procedure never abstained.
+Decision agreement held throughout. In every experiment, on every scored
+non-boundary case, the adaptive procedure returned the reference decision. The
+false-stop rate was 0 in each difficulty stratum, heavy-tailed cases included.
 
-Compute savings did not. H1 asks the adaptive rule to use at least 2× fewer draws
-than a fixed budget that reaches the same decisions at least as reliably, and to
-do so in every stratum. It met this in none of them:
+Compute savings did not hold up. Across four experiments:
 
-- **easy and equivalent strata** — a fixed budget as small as 32 resamples
-  reached the same decisions with the same reliability, while the adaptive rule
-  used a median of 128 draws (easy) and 768 (equivalent).
-- **moderate stratum** — the adaptive rule was more reliable than every fixed
-  budget in the sweep {32, 64, 128, 320}, but used more draws than all of them
-  (median 448), so no equally reliable fixed budget was expensive enough for it to
-  beat by 2×.
+- **Empirical-Bernstein band (v2026.9.3).** The adaptive rule met the 2× criterion
+  in no stratum. Its median draws (448 moderate, 768 equivalent) exceeded every
+  budget in the fixed-B sweep {32, 64, 128, 320}.
+- **Betting confidence sequence (v2026.9.4).** A Waudby-Smith–Ramdas betting band
+  cut median draws 2–5× and passed the 2× criterion in the easy and moderate
+  strata. The equivalent stratum still failed, because small fixed budgets already
+  resolve equivalence.
+- **Equivalence band (v2026.9.5).** That failure is structural. The fixed-B
+  percentile interval is a fixed-width functional whose half-width plateaus near
+  the reference budget. An anytime-valid band must instead shrink Monte Carlo
+  error below δ. Fixed-B dominates both instruments inside [−δ, +δ].
+- **Directional decisions.** The adaptive procedure estimates `E*[Δ*]`, which
+  equals the closed-form plug-in `Δ(E)` up to bootstrap bias. A zero-draw rule on
+  `Δ(E)` matched the reference on 586/586 held-out cases, and fixed-B at `B=32`
+  agreed on 99.4% of directional cases. So no directional savings exist to find.
 
-The procedure agreed with the reference throughout but did not save draws against
-the fixed-budget sweep. Details in [`PLAN.md`](PLAN.md).
+A plan-stage prototype on SHAP top-k attributions, where no zero-draw shortcut
+exists, found adaptive about 2.3× cheaper than a certified fixed budget. It was
+not 2× cheaper than exact enumeration, and it cost more than an uncertified fixed
+budget that was never wrong. The unit was withdrawn before implementation.
+
+In each setup, certifying a decision cost more than simply being right. Details:
+[`knowledge/equivalence-band-savings.md`](knowledge/equivalence-band-savings.md),
+[`knowledge/anytime-valid-band.md`](knowledge/anytime-valid-band.md),
+[`knowledge/shap-topk-savings.md`](knowledge/shap-topk-savings.md).
 
 ## What's next
 
-The stopping rule uses a finite-horizon empirical-Bernstein confidence sequence
-for the bounded mean difference, following Howard et al. (2021), with a tuned
-draw cap of `B_max = 2048`. At the budgets where a fixed-budget bootstrap already
-resolves these cases, this band's half-width stays wider than δ, so an
-equivalence decision in particular cannot resolve until many more draws
-accumulate. This experiment evaluates that one stopping rule; it does not
-establish that adaptive stopping is generally compute-inefficient.
-
-The next experiment replaces the band with a betting confidence sequence
-(Waudby-Smith & Ramdas, 2024), which the literature reports as tighter for
-bounded variables, and holds the decision task, battery, and 2× criterion fixed.
-Whether tighter finite-budget bands translate into earlier stopping is the open
-question.
+A further experiment needs an application that actually requires a per-case
+certificate, where an uncertified cheap answer is not acceptable. Without one,
+the negative result stands as the finding. See [`PLAN.md`](PLAN.md).
 
 ## The code
 
@@ -108,14 +110,18 @@ Python 3.12, `src/` layout, numpy-only runtime.
 | `bootstrap.py` | paired row-resampler with exact draw accounting and `SeedSequence.spawn` branches |
 | `reference.py` | the fixed-budget percentile-bootstrap decision |
 | `adaptive.py` | the blind adaptive bootstrap controller (empirical-Bernstein confidence sequence) |
+| `betting.py` | Waudby-Smith–Ramdas betting confidence sequence, selectable via `instrument="betting"` |
 | `sweep.py` | fixed-B sweep and Pareto helpers |
 | `strata.py` | plug-in `Δ(E)` difficulty classification |
-| `benchmark.py` | offline first-result harness |
+| `benchmark.py` | offline adaptive-vs-reference harness |
+| `equiv_probe.py` | equivalence-band probe |
 | `eval.py` | `python -m adaptive_compute.eval` entry point |
 
 ```bash
 python -m adaptive_compute.eval --check   # fast decision check
 python -m adaptive_compute.eval --run     # offline benchmark, writes results.{md,json}
+python -m adaptive_compute.eval --compare # EB vs betting A/B on the same stream
+python -m adaptive_compute.eval --equiv-probe  # equivalence-band probe
 ```
 
 Every run is reproducible from its generator parameters and seed.

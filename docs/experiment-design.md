@@ -1,6 +1,7 @@
 # Adaptive Compute — v0 Experiment Design
 
-**Status:** v0 proposal, 2026-09-19. No code exists. This design specifies the
+**Status:** v0 design, 2026-09-19; implemented in v2026.9.3 (`src/adaptive_compute/`),
+results in the [README](../README.md#current-result-v202696). This design specifies the
 smallest experiment that can **falsify** H1 in
 [`research-definition.md`](research-definition.md).
 
