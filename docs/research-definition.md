@@ -1,7 +1,8 @@
 # Adaptive Compute — Research Definition
 
-**Status:** v0 specification, 2026-09-19. Nothing in this document has been
-experimentally established. See [§9 Believed vs. Established](#9-believed-vs-established).
+**Status:** v0 specification, 2026-09-19. Tested through v2026.9.6: H1 is not
+supported; see the [README's current result](../README.md#current-result-v202696).
+[§9 Believed vs. Established](#9-believed-vs-established) predates those results.
 
 This document defines *what we are investigating and how we would know we are
 wrong*. The concrete first experiment lives in
