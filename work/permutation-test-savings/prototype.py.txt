@@ -1,0 +1,186 @@
+# plan-stage prototype: sequential MC permutation tests across many hypotheses
+# m features per dataset, dCov (U-centered) independence test of each X_j with y,
+# permutations of y shared across features. Bonferroni at ALPHA/m.
+import sys
+import time
+
+import numpy as np
+from scipy import stats
+from scipy.special import betaln
+
+N = 100
+M = 100
+N_SIG = 10
+ALPHA = 0.05
+THR = ALPHA / M  # 5e-4
+L = 50_000  # shared stream length (also adaptive M_max)
+L_EXT = 500_000  # reference extension for ambiguous features
+EPS_F = 1e-4  # per-feature resampling risk (family 0.01)
+GRID = (1999, 3999, 7999, 19999, 49999)
+BATCH = 250
+
+
+def ucenter(D):
+    n = D.shape[-1]
+    r = D.sum(-1, keepdims=True)
+    c = D.sum(-2, keepdims=True)
+    t = D.sum((-1, -2), keepdims=True)
+    U = D - r / (n - 2) - c / (n - 2) + t / ((n - 1) * (n - 2))
+    idx = np.arange(n)
+    U[..., idx, idx] = 0.0
+    return U
+
+
+def make_dataset(seed):
+    r = np.random.default_rng(seed)
+    heavy = r.random(M) < 0.5
+    X = np.where(heavy, r.standard_t(3, (N, M)), r.normal(size=(N, M)))
+    sig = r.choice(M, N_SIG, replace=False)
+    forms = [
+        lambda x: x,
+        lambda x: x**2,
+        np.abs,
+        lambda x: np.sin(2 * x),
+        np.sign,
+    ]
+    y = r.standard_t(3, N) if r.random() < 0.5 else r.normal(size=N)
+    coef = np.exp(r.uniform(np.log(0.1), np.log(2.0), N_SIG))
+    kinds = r.integers(len(forms), size=N_SIG)
+    for j, c, k in zip(sig, coef, kinds):
+        g = forms[k](X[:, j])
+        g = (g - g.mean()) / (g.std() + 1e-12)
+        y = y + c * g
+    is_sig = np.zeros(M, bool)
+    is_sig[sig] = True
+    return X, y, is_sig, r
+
+
+def dist(v):
+    return np.abs(v[:, None] - v[None, :])
+
+
+def perm_stats(A_flat, By, perms):
+    # A_flat: (k, N*N); By: (N, N); perms: (b, N)
+    Bp = By[perms[:, :, None], perms[:, None, :]].reshape(len(perms), -1)
+    return A_flat @ Bp.T  # (k, b)
+
+
+def run_case(seed):
+    X, y, is_sig, r = make_dataset(seed)
+    A = np.stack([ucenter(dist(X[:, j])) for j in range(M)])  # (M,N,N)
+    By = ucenter(dist(y))
+    A_flat = A.reshape(M, -1)
+    T_obs = A_flat @ By.reshape(-1)
+    # zero-draw rivals
+    dAA = (A_flat**2).sum(1) / (N * (N - 3))
+    dBB = (By**2).sum() / (N * (N - 3))
+    Rst = (T_obs / (N * (N - 3))) / np.sqrt(dAA * dBB)
+    v = N * (N - 3) / 2
+    Tt = np.sqrt(v - 1) * Rst / np.sqrt(1 - Rst**2)
+    p_dcor_t = stats.t.sf(Tt, v - 1)
+    rho = np.array([stats.pearsonr(X[:, j], y)[0] for j in range(M)])
+    tp = rho * np.sqrt((N - 2) / (1 - rho**2))
+    p_pearson = 2 * stats.t.sf(np.abs(tp), N - 2)
+    # stream
+    exc = np.empty((L, M), bool)
+    for s in range(0, L, BATCH):
+        b = min(BATCH, L - s)
+        perms = np.argsort(r.random((b, N)), 1)
+        exc[s : s + b] = (perm_stats(A_flat, By, perms) >= T_obs[:, None]).T
+    S = np.cumsum(exc, 0, dtype=np.int64)  # S[t-1] = exceedances in first t draws
+    # reference: extend ambiguous features
+    SL = S[-1].astype(float)
+    lo, hi = cp_interval(SL, L, 1e-3)
+    amb = np.where((lo <= THR) & (hi >= THR))[0]
+    n_ref = np.full(M, L, float)
+    S_ref = SL.copy()
+    if amb.size:
+        Aa = A_flat[amb]
+        extra = np.zeros(amb.size)
+        for s in range(0, L_EXT - L, BATCH):
+            perms = np.argsort(r.random((BATCH, N)), 1)
+            extra += (perm_stats(Aa, By, perms) >= T_obs[amb, None]).sum(1)
+        S_ref[amb] += extra
+        n_ref[amb] = L_EXT
+    p_ref = (S_ref + 1) / (n_ref + 1)
+    lo, hi = cp_interval(S_ref, n_ref, 1e-3)
+    ref_unres = (lo <= THR) & (hi >= THR)
+    ref_rej = p_ref <= THR
+    # adaptive: Beta(1,1)-mixture LR vs p=THR, anytime (Ville), per-feature risk EPS_F
+    t = np.arange(1, L + 1)[:, None]
+    logLR = betaln(1 + S, 1 + t - S) - (S * np.log(THR) + (t - S) * np.log1p(-THR))
+    hit = logLR >= np.log(1 / EPS_F)
+    stopped = hit.any(0)
+    tstop = np.where(stopped, hit.argmax(0) + 1, L)
+    Sstop = S[tstop - 1, np.arange(M)]
+    ad_rej = np.where(stopped, Sstop / tstop < THR, False)
+    ad_abst = ~stopped
+    # fixed-B valid p, curtailed fixed-B, CP-certified fixed-B
+    fx = {}
+    for B in GRID:
+        SB = S[B - 1]
+        rej = (1 + SB) / (1 + B) <= THR
+        scrit = int(np.floor(THR * (1 + B))) - 1  # reject iff SB <= scrit
+        over = S[:B] > scrit
+        tc = np.where(over.any(0), over.argmax(0) + 1, B)
+        crej = S[tc - 1, np.arange(M)] <= scrit
+        assert (crej == rej).all()
+        clo, chi = cp_interval(SB.astype(float), B, EPS_F)
+        cdec = (chi < THR) | (clo > THR)
+        crej2 = chi < THR
+        fx[B] = dict(rej=rej, cost=B, ccost=tc, cdec=cdec, crej=crej2)
+    return dict(
+        is_sig=is_sig, p_ref=p_ref, ref_rej=ref_rej, ref_unres=ref_unres, n_amb=amb.size,
+        ad_rej=ad_rej, ad_abst=ad_abst, tstop=tstop, fx=fx,
+        z_dcor=p_dcor_t <= THR, z_pear=p_pearson <= THR,
+    )
+
+
+def cp_interval(S, n, a):
+    S = np.asarray(S, float)
+    n = np.broadcast_to(np.asarray(n, float), S.shape)
+    lo = np.where(S > 0, stats.beta.ppf(a / 2, S, n - S + 1), 0.0)
+    hi = np.where(S < n, stats.beta.ppf(1 - a / 2, S + 1, n - S), 1.0)
+    return lo, hi
+
+
+def main(ncase, seed0):
+    t0 = time.time()
+    res = []
+    for i in range(ncase):
+        res.append(run_case(seed0 + i))
+        print(f"case {i} amb={res[-1]['n_amb']} t={time.time()-t0:.0f}s", flush=True)
+    cat = lambda k: np.concatenate([r[k] for r in res])
+    sig, pref, rrej, unres = cat("is_sig"), cat("p_ref"), cat("ref_rej"), cat("ref_unres")
+    sc = ~unres
+    nf = sig.size
+    print(f"\n{ncase} datasets x {M} features = {nf}; signals {sig.sum()}; ref-unresolved {unres.sum()}")
+    print(f"ref rejections: {rrej[sc].sum()} (signals {(rrej & sig)[sc].sum()}, nulls {(rrej & ~sig)[sc].sum()})")
+    near = (pref >= THR / 4) & (pref <= THR * 4)
+    print(f"near-threshold p_ref in [thr/4, 4thr]: {near.sum()} ({near.mean():.3%}); signals {(near & sig).sum()}/{sig.sum()}")
+    print(f"signal p_ref quantiles (10/25/50/75/90): {np.quantile(pref[sig], [.1,.25,.5,.75,.9])}")
+    for name in ("z_dcor", "z_pear"):
+        z = cat(name)
+        dis = (z != rrej) & sc
+        print(f"zero-draw {name}: disagree {dis.sum()}/{sc.sum()} (false-rej {(z & ~rrej & sc).sum()}, missed {(~z & rrej & sc).sum()})")
+    ad_rej, ad_abst, tstop = cat("ad_rej"), cat("ad_abst"), cat("tstop")
+    wrong = (ad_rej != rrej) & ~ad_abst & sc
+    print(f"\nADAPTIVE (Beta(1,1) mixture, eps_f={EPS_F}, Mmax={L}): mean draws/feature {tstop.mean():.1f}  "
+          f"median {np.median(tstop):.0f}  total/dataset {tstop.sum()/ncase:.0f}")
+    print(f"  abstain {ad_abst.sum()} ({ad_abst.mean():.3%})  wrong vs ref {wrong.sum()}")
+    print(f"  nulls mean draws {tstop[~sig].mean():.1f} median {np.median(tstop[~sig]):.0f}; signals mean {tstop[sig].mean():.0f}")
+    for B in GRID:
+        rej = np.concatenate([r["fx"][B]["rej"] for r in res])
+        cc = np.concatenate([r["fx"][B]["ccost"] for r in res])
+        cdec = np.concatenate([r["fx"][B]["cdec"] for r in res])
+        crej = np.concatenate([r["fx"][B]["crej"] for r in res])
+        miss = (~rej & rrej & sc).sum()
+        frej = (rej & ~rrej & sc).sum()
+        cwrong = (cdec & (crej != rrej) & sc).sum()
+        print(f"B={B:>6}: fixed total/dataset {B*M:>8}  valid-p missed {miss:>3} false-rej {frej}  | "
+              f"curtailed total/dataset {cc.sum()/ncase:>9.0f} ({B*M*ncase/cc.sum():5.1f}x)  | "
+              f"CP-certified nondec {1-cdec.mean():.3%} wrong {cwrong}")
+
+
+if __name__ == "__main__":
+    main(int(sys.argv[1]), int(sys.argv[2]))

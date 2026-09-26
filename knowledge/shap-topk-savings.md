@@ -55,17 +55,20 @@ prototype is `work/shap-topk-savings/prototype.py.txt` and its output is
 
 ## The recurring pattern
 
-This is the third setup where adaptive MC savings failed to materialize:
+Adaptive MC savings failed to materialize in four setups:
 
 1. **Mean-CS bootstrap:** the estimand was closed-form.
 2. **Equivalence band:** a fixed-width functional was cheaper than shrinking MC error.
 3. **SHAP top-k:** certification costs more than correctness.
+4. **Permutation tests (Bonferroni):** curtailed fixed-B (Besag–Clifford) is already
+   valid and cheaper, and the adaptive rule is Gandy (2009). See
+   `knowledge/permutation-test-savings.md`.
 
 In every case the adaptive procedure pays for a per-case guarantee that the cheaper
-baseline never has to provide. An adaptive-compute claim only has content if the
-application actually *needs* the certificate, and it must then be compared against a
-certified baseline. The next research step is to find such an application, or to accept
-the negative.
+baseline never has to provide, or provides more cheaply by curtailing. An
+adaptive-compute claim only has content if the application actually *needs* the
+certificate, and it must then be compared against a certified baseline that is itself
+curtailed. The research line was closed on this negative on 2026-09-26.
 
 ## Plan-review lessons worth keeping
 

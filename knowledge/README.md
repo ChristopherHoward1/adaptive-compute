@@ -13,6 +13,7 @@ Load a doc only when a task names it. Nothing in this directory is hot context.
 - `controlled-retest-discipline.md` — how to re-test a released result under a swapped component.
 - `decisions.md` — older decisions archived from `PLAN.md`.
 - `equivalence-band-savings.md` — why fixed-B structurally beats adaptive inside `[−δ, +δ]`.
+- `permutation-test-savings.md` — permutation-test plan-stage prototype; curtailment dominates, research line closed.
 - `release-tagging.md` — how `release.sh tag-after-merge` finds the release commit.
 - `research-doc-citations.md` — citation rules for docs that cite literature.
 - `shap-topk-savings.md` — SHAP top-k plan-stage prototype and why the unit was withdrawn.

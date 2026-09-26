@@ -9,7 +9,7 @@ Build the **Adaptive Compute** research system through the agentic-coding harnes
 ## Now
 
 - **Shipped through v2026.9.6** — see `CHANGELOG.md` and `work/<slug>/retro.md`.
-- **Next:** the research line is **paused for an Owner re-think**. The directional positive was closed by zero-draw plug-in dominance. The SHAP top-k follow-up (`work/shap-topk-savings/`) was withdrawn at plan stage after its prototype showed only marginal certified savings (see Decisions, 2026-09-23). A new experiment needs an application that actually *requires* a per-case certificate, or the negative gets accepted as the result. Mechanical `/1-plan` candidates queued: **`release-anchor-approve-path`**; **`eval-check-resolution-guard`**.
+- **Research line closed (2026-09-26)** on the negative: across four setups the anytime-valid certificate never paid for itself (see Decisions, 2026-09-26; `README.md` → Result). Mechanical `/1-plan` candidates still queued: **`release-anchor-approve-path`**; **`eval-check-resolution-guard`**.
 
 ## Decisions
 
@@ -28,6 +28,8 @@ Older decisions: `knowledge/decisions.md`.
 - 2026-09-23 — **Read CI state from `gh pr view <n> --json statusCheckRollup,mergeStateStatus`, never from the tail of `gh pr checks --watch`.** The watcher can die on a network error and leave a stale `pending` as its last line (seen twice). — `work/gate-readline-resilience/retro.md`.
 - 2026-09-23 — **The adaptive mean-CS procedure estimates a closed-form quantity; a zero-draw rule dominates it.** `E*[Δ*]` equals the plug-in `Δ(E)` up to bootstrap bias (median gap 0.00025, max 0.0018). `decision_from_delta(Δ(E))` matched the reference on 586/586 scored held-out cases. Fixed-B at `B=32` agrees on 99.4% of directional cases. So the "directional positive" does not exist as posed. Pooling strata would pass §8 only through a functional mismatch on 0.4–0.6% of cases, which would be a strawman. Found at plan time by the detectability precondition; no unit spent. — `knowledge/anytime-valid-band.md`, `docs/research-definition.md` §7.
 - 2026-09-23 — **SHAP top-k adaptive savings are marginal; the unit was withdrawn at plan stage.** Prototype at D=12, |bg|=64, n=40, natural case mix, shared stream, fixed-horizon certified baseline. Adaptive mean cost 7,119 draws with 17.5% abstain. Certified fixed-M needs 16,384 draws (about 2.3×). With exact fallback, adaptive costs 0.53 of exact enumeration. Uncertified fixed-M at 4,096 is cheaper and was never wrong. Ties drive the cost. This is the third setup where certifying costs more than being right. — `knowledge/shap-topk-savings.md`, `work/shap-topk-savings/plan.md`.
+
+- 2026-09-26 — **Research line closed; permutation-test unit withdrawn at plan stage.** Prototype (30 datasets × 100 features, Bonferroni) looked 24× cheaper than certified fixed-B, but that baseline was a strawman: curtailed certified fixed-B brings it to 0.4–1.7×, and curtailed plain fixed-B (Besag–Clifford, valid at any B) is cheaper still. The adaptive rule is Gandy (2009); the BH/FDR extension has MMCTest/AMT as ancestors. Owner closed the line on the four-setup negative. Lesson: any certified baseline must itself be curtailed. — `knowledge/permutation-test-savings.md`, `work/permutation-test-savings/plan.md`.
 
 ## Risks
 
