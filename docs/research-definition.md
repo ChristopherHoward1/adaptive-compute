@@ -1,7 +1,8 @@
 # Adaptive Compute — Research Definition
 
-**Status:** v0 specification, 2026-09-19. Tested through v2026.9.6: H1 is not
-supported; see the [README's current result](../README.md#current-result-v202696).
+**Status:** v0 specification, 2026-09-19. **Closed 2026-09-26.** H1 is not
+supported, and H2 was probed at plan stage twice (SHAP top-k, permutation tests) with
+no positive; see the [README's result](../README.md#result-research-line-closed-2026-09-26).
 [§9 Believed vs. Established](#9-believed-vs-established) predates those results.
 
 This document defines *what we are investigating and how we would know we are

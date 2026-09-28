@@ -1,0 +1,47 @@
+case 0 amb=1 t=487s
+case 1 amb=1 t=519s
+case 2 amb=0 t=527s
+case 3 amb=1 t=561s
+case 4 amb=1 t=593s
+case 5 amb=0 t=598s
+case 6 amb=0 t=604s
+case 7 amb=0 t=611s
+case 8 amb=0 t=616s
+case 9 amb=1 t=644s
+case 10 amb=0 t=649s
+case 11 amb=0 t=654s
+case 12 amb=1 t=684s
+case 13 amb=0 t=690s
+case 14 amb=0 t=696s
+case 15 amb=0 t=703s
+case 16 amb=0 t=709s
+case 17 amb=0 t=716s
+case 18 amb=0 t=723s
+case 19 amb=0 t=728s
+case 20 amb=0 t=733s
+case 21 amb=1 t=765s
+case 22 amb=1 t=802s
+case 23 amb=0 t=808s
+case 24 amb=0 t=814s
+case 25 amb=1 t=846s
+case 26 amb=1 t=875s
+case 27 amb=0 t=887s
+case 28 amb=2 t=920s
+case 29 amb=1 t=951s
+
+30 datasets x 100 features = 3000; signals 300; ref-unresolved 2
+ref rejections: 37 (signals 35, nulls 2)
+near-threshold p_ref in [thr/4, 4thr]: 23 (0.767%); signals 21/300
+signal p_ref quantiles (10/25/50/75/90): [7.79984400e-05 1.82596348e-02 1.66336673e-01 5.27419452e-01
+ 8.27561449e-01]
+zero-draw z_dcor: disagree 65/2998 (false-rej 65, missed 0)
+zero-draw z_pear: disagree 16/2998 (false-rej 5, missed 11)
+
+ADAPTIVE (Beta(1,1) mixture, eps_f=0.0001, Mmax=50000): mean draws/feature 816.9  median 4  total/dataset 81690
+  abstain 18 (0.600%)  wrong vs ref 0
+  nulls mean draws 75.8 median 4; signals mean 7486
+B=  1999: fixed total/dataset   199900  valid-p missed   3 false-rej 4  | curtailed total/dataset      3732 ( 53.6x)  | CP-certified nondec 2.333% wrong 0
+B=  3999: fixed total/dataset   399900  valid-p missed   3 false-rej 2  | curtailed total/dataset      7728 ( 51.7x)  | CP-certified nondec 2.000% wrong 0
+B=  7999: fixed total/dataset   799900  valid-p missed   2 false-rej 1  | curtailed total/dataset     15472 ( 51.7x)  | CP-certified nondec 1.767% wrong 0
+B= 19999: fixed total/dataset  1999900  valid-p missed   0 false-rej 0  | curtailed total/dataset     38754 ( 51.6x)  | CP-certified nondec 0.667% wrong 0
+B= 49999: fixed total/dataset  4999900  valid-p missed   0 false-rej 0  | curtailed total/dataset     97947 ( 51.0x)  | CP-certified nondec 0.467% wrong 0

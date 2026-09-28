@@ -57,9 +57,9 @@ and the fixed-budget reference run recovers it.
 - [`docs/experiment-design.md`](docs/experiment-design.md) — the synthetic
   battery, baselines, decision rule, and falsification criteria.
 
-## Current result (v2026.9.6)
+## Result (research line closed 2026-09-26)
 
-H1 is not supported. The research line is paused for a re-think.
+H1 is not supported. The research line is closed on this negative result.
 
 Decision agreement held throughout. In every experiment, on every scored
 non-boundary case, the adaptive procedure returned the reference decision. The
@@ -88,16 +88,27 @@ exists, found adaptive about 2.3× cheaper than a certified fixed budget. It was
 not 2× cheaper than exact enumeration, and it cost more than an uncertified fixed
 budget that was never wrong. The unit was withdrawn before implementation.
 
+A second plan-stage prototype tested Monte Carlo permutation tests across 100
+features at a Bonferroni threshold. That is the classic case where a per-case
+decision certificate is supposed to matter. Adaptive looked 24× cheaper than a
+certified fixed budget, but only because that baseline shuffled obvious nulls to
+the full budget. Once the baseline also stopped early, the ratio fell to 0.4–1.7×.
+Plain early stopping of a fixed budget (Besag–Clifford curtailment) was cheaper
+still, and its p-values are already valid at any budget. The adaptive rule itself is
+Gandy (2009). This unit was also withdrawn before implementation.
+
 In each setup, certifying a decision cost more than simply being right. Details:
 [`knowledge/equivalence-band-savings.md`](knowledge/equivalence-band-savings.md),
 [`knowledge/anytime-valid-band.md`](knowledge/anytime-valid-band.md),
-[`knowledge/shap-topk-savings.md`](knowledge/shap-topk-savings.md).
+[`knowledge/shap-topk-savings.md`](knowledge/shap-topk-savings.md),
+[`knowledge/permutation-test-savings.md`](knowledge/permutation-test-savings.md).
 
-## What's next
+## Status
 
-A further experiment needs an application that actually requires a per-case
-certificate, where an uncertified cheap answer is not acceptable. Without one,
-the negative result stands as the finding. See [`PLAN.md`](PLAN.md).
+The research line is closed. Where adaptive Monte Carlo budgets do save compute,
+the savings come from classical early stopping (curtailment, Besag–Clifford), not
+from the anytime-valid certificate this project set out to test. See
+[`PLAN.md`](PLAN.md).
 
 ## The code
 
