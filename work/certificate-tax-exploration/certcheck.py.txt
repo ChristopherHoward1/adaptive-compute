@@ -1,0 +1,16 @@
+import sys, pickle, numpy as np
+exec(open('selfcons.py').read().split('def main')[0].replace("qs = pickle.load(open(sys.argv[1], 'rb'))", "qs = pickle.load(open(sys.argv[1], 'rb')); R = 1000"))
+from scipy.special import betaln, betainc
+for alpha in [0.2, 0.05]:
+    stops = wrong = 0; per_q = []
+    for q in qs:
+        probs, corr, valid = prep(q)
+        mode = int(np.argmax(np.where(valid, probs[:-1], -1)))
+        C = runs(probs, valid); a, b = top2(C)
+        Mup = betaln(a+1, b+1) + np.log(np.clip(1 - betainc(a+1, b+1, 0.5), 1e-300, None)) + np.log(2) + (a+b)*np.log(2)
+        hit = Mup >= np.log(1/alpha); has = hit.any(1); t = hit.argmax(1)
+        d = C[np.arange(R), t].argmax(-1)   # at a certified stop the leader is strict
+        w = (d != mode) & has
+        stops += has.sum(); wrong += w.sum(); per_q.append(w.sum()/R)
+    per_q = np.array(per_q)
+    print(f'{sys.argv[1]} alpha={alpha}: certified stops={stops}, wrong-mode={wrong} ({wrong/max(stops,1):.4f}); worst question false-cert rate={per_q.max():.3f}; questions over alpha: {(per_q > alpha).sum()}')

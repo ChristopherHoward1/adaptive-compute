@@ -1,0 +1,35 @@
+# MATH_Llama-3-8B-Instruct.pkl  questions=128 R=300
+policy                             mean n     acc   =mode
+policy                             mean n     acc   =mode  curtailed-n@acc  ratio
+fixed k=1                            1.00  0.2665  0.3171
+curtailed k=1                        1.00  0.2665  0.3171
+fixed k=3                            3.00  0.3085  0.3949
+curtailed k=3                        2.81  0.3081  0.3950
+fixed k=5                            5.00  0.3354  0.4609
+curtailed k=5                        4.67  0.3346  0.4622
+fixed k=9                            9.00  0.3613  0.5394
+curtailed k=9                        8.22  0.3607  0.5406
+fixed k=17                          17.00  0.3836  0.6229
+curtailed k=17                      15.22  0.3830  0.6243
+fixed k=33                          33.00  0.4032  0.7061
+curtailed k=33                      29.12  0.4016  0.7064
+fixed k=65                          65.00  0.4128  0.7838
+curtailed k=65                      56.76  0.4124  0.7846
+fixed k=129                        129.00  0.4207  0.8446
+curtailed k=129                    111.88  0.4204  0.8451
+fixed k=256                        256.00  0.4237  0.8875
+curtailed k=256                    221.19  0.4238  0.8872
+certified a=0.2                    139.86  0.4237  0.8840       217.8   1.56x
+certified a=0.05                   163.48  0.4238  0.8882
+bayes conf=0.9 cap=64               37.10  0.4109  0.7710        53.0   1.43x
+bayes conf=0.95 cap=64              43.37  0.4120  0.7805        55.9   1.29x
+bayes conf=0.99 cap=64              50.41  0.4129  0.7833        60.1   1.19x
+bayes conf=0.95 cap=256            110.96  0.4234  0.8778       209.3   1.89x
+EB conf=0.9 cap=256                101.41  0.4239  0.8739
+EB conf=0.95 cap=256               126.32  0.4241  0.8838
+EB conf=0.99 cap=256               157.30  0.4244  0.8876
+EB conf=0.999 cap=256              180.02  0.4241  0.8879
+streak m=3 else curt33              27.11  0.4017  0.7028        29.5   1.09x
+streak m=5 else curt33              28.26  0.4018  0.7063        29.8   1.06x
+_oracle mode (k=inf)                  inf  0.4297  1.0000
+_pass@any                             inf  0.8594     nan

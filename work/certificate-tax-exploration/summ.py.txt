@@ -1,0 +1,18 @@
+"""Matched-error cost ratios from frontier logs: for each oracle point, curtailed-fixed cost at same error (log-log interp)."""
+import sys, re, numpy as np
+for fn in sys.argv[1:]:
+    t = open(fn).read()
+    if 'certified' not in t: continue
+    fx = np.array([list(map(float, l.split())) for l in re.findall(r'^\s+(\d+\s+[\d.]+\s+[\d.]+)$', t.split('bayes')[0], re.M)])
+    ba = np.array([list(map(float, l.split())) for l in re.findall(r'^\s+([\d.]+\s+[\d.]+\s+[\d.]+)$', t.split('bayes')[1].split('certified')[0], re.M)])
+    ce = np.array([list(map(float, l.split())) for l in re.findall(r'^\s+(0\.\d+\s+[\d.]+\s+[\d.]+\s+[\d.]+)$', t.split('certified')[1], re.M)])
+    err_f, n_f, n_c = fx[:,1], fx[:,0], fx[:,2]
+    def at(err, ncol):  # interpolate cost at given error (errors decreasing in B)
+        if err < err_f.min() or err > err_f.max(): return np.nan
+        return float(np.exp(np.interp(np.log(err), np.log(err_f[::-1]), np.log(ncol[::-1]))))
+    print(f"== {fn.split('/')[-1]}  (fixed err floor at max B: {err_f.min():.4f})")
+    for L, en, ee in ba:
+        if en < 2: continue
+        print(f"  oracle L={L:<7.0f} n={en:8.1f} err={ee:.4f} | fixed-B {at(ee,n_f):8.1f} ({at(ee,n_f)/en:5.2f}x) | curtailed {at(ee,n_c):8.1f} ({at(ee,n_c)/en:5.2f}x)")
+    for a, n, e, ab in ce:
+        print(f"  certified a={a} n={n:8.1f} err={e:.4f} abst={ab:.3f} | curtailed at same err {at(e,n_c):8.1f} ({at(e,n_c)/n:5.2f}x)")

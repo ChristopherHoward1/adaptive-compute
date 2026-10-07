@@ -1,0 +1,13 @@
+# c=0.5 tau=1.0 Nmax=600 batch m=400 pilot n0=10
+      L |  oracle n    err |      EB n    err | EB-vs-oracle cost
+    300 |      18.5  0.100 |      19.9  0.102 |     1.07x
+   1000 |      42.7  0.070 |      45.7  0.072 |     1.07x
+   3000 |      79.8  0.045 |      80.8  0.048 |     1.01x
+  10000 |     116.3  0.043 |     119.6  0.043 |     1.03x
+curtailed B=  63: n=   47.3 err=0.107
+curtailed B= 127: n=   95.7 err=0.080
+curtailed B= 255: n=  192.1 err=0.052
+curtailed B= 511: n=  384.6 err=0.040
+python3 ebayes.py 0.5 1.0 600 400 10 1  356.83s user 122.65s system 15% cpu 52:15.49 total
+
+[exited with code 0]
