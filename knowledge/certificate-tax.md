@@ -7,6 +7,12 @@ line closed on 2026-09-26, or any unit on LLM test-time compute (self-consistenc
 plan-reviewer has seen them. The scripts and logs are in `work/certificate-tax-exploration/`. The
 scripts are saved as `.py.txt` so the gate skips them.
 
+**Correction (2026-10-08).** A plan-reviewer checked the GSM8K self-consistency "positive"
+below. It holds only at **zero accuracy margin** against curtailed fixed-k. With any
+practical margin, the certificate does not pay on GSM8K either (Exp 3, "Matched-frontier
+check"). So all five setups now fit the same pattern. The promotion unit
+`work/self-consistency-allocation/plan.md` was withdrawn at plan stage.
+
 ## The question
 
 All four closed setups had the same shape: "certifying costs more than being right"
@@ -102,13 +108,25 @@ Results are mean samples per question at the stated accuracy
 | Bayes, flat prior, conf 0.95, cap 256 | **5.9** / 0.9680 | **20.9** / 0.8765 | 111 / 0.4234 |
 | streak of 3 identical answers, else curtailed k=33 | 5.6 / 0.9674 | 11.2 / 0.8673 | 27 / 0.4017 |
 
-- **On GSM8K, adaptivity reaches plateau accuracy at 3–6× fewer samples than curtailed
-  fixed-k, and here the certificate pays for itself.** The certified rule beats curtailed
-  fixed-k. The gain from the difficulty spread is large enough to absorb the roughly 2× tax,
-  because most questions are near-unanimous and a few are contested. This is the first
-  setup in the project where a certified adaptive rule beats the curtailed baseline.
-- Matched-accuracy ratios in the logs (for example 11×) are read off a nearly flat accuracy
-  curve and are inflated by noise. Quote "plateau accuracy at 3–6× fewer samples" instead.
+- **~~On GSM8K the certificate pays for itself~~: superseded (2026-10-08).** The 3–6× was
+  measured against curtailed k=129. The GSM8K accuracy curves are flat long before that
+  point, so the 3–6× mostly buys the last 0.1–0.3 points of accuracy.
+- **Matched-frontier check.** These figures compare the certified rule at α=0.05 with the
+  smallest curtailed k that reaches its accuracy minus a margin (from the logs).
+  - **At margin 0.005**, the certified rule loses on GSM8K-70B and gives only a small
+    saving on GSM8K-8B:
+    - On GSM8K-70B the ratio is about **0.4×**. Curtailed k=9 reaches 0.9648 at 5.3
+      samples, against 0.9685 at 12.4 for the certified rule.
+    - On GSM8K-8B the ratio is about **1.3×**. Curtailed k=65 reaches 0.8715 at 40.4
+      samples, against 0.8778 at 42.1 for the certified rule.
+  - **At zero margin**, the ratios are 2.8× and 3.6×.
+  - **The margin decides the verdict.** The certificate pays only if the user values
+    tenths of an accuracy point at several times the compute.
+- **The uncertified rules do somewhat better.** Flat Bayes at conf 0.95 and the streak/ESC
+  rule beat curtailed fixed-k modestly at practical margins. For example, on GSM8K-70B
+  flat Bayes reaches 0.9680 at 5.9 samples, against 0.9673 at 9.6 for curtailed k=17.
+  This fits the tax reading: the adaptive gain is real but small, and the certificate eats
+  it.
 - **On MATH there is little to gain** (1.1–1.9×). Answers are dispersed on most questions, so
   nearly every question is a near-tie: no difficulty spread, no gain. This matches the τ
   trend in Exp 1.
@@ -139,9 +157,16 @@ ties. It pays only if the spread gain exceeds that.
 - **Equivalence band, SHAP ties:** the cases were ties-dominated, so there was no spread.
 - **Permutation tests:** the bulk sat far from the threshold, so curtailment already captured
   the gain.
-- **GSM8K self-consistency:** central threshold and huge spread. The certificate pays.
+- **GSM8K self-consistency:** central threshold and huge spread, but the accuracy curve
+  plateaus within about 10–20 samples. Curtailed fixed-k at a matched practical margin is
+  already cheap, so the certificate does not pay (2026-10-08 correction).
 
 ## If the line is ever reopened
+
+The self-consistency unit sketched below was planned and **withdrawn at plan stage
+(2026-10-08)**; see `work/self-consistency-allocation/plan.md` → Review. Any successor must
+gate on the matched curtailed frontier with a margin fixed and justified in advance, never
+on a fixed-k anchor. The original sketch follows.
 
 The candidate unit is **self-consistency compute allocation**. Pre-register the arms: fixed-k,
 curtailed-k, certified, flat-Bayes, streak (Exp 3), plus the EB-DP oracle bound. Pre-register
