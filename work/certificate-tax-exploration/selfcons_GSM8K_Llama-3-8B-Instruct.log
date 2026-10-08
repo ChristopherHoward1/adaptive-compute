@@ -1,0 +1,36 @@
+  print(f'{name:32s} {n:8.2f} {acc:7.4f} {np.nanmean(v[:,2]):7.4f}{extra}')
+# GSM8K_Llama-3-8B-Instruct.pkl  questions=127 R=300
+policy                             mean n     acc   =mode
+policy                             mean n     acc   =mode  curtailed-n@acc  ratio
+fixed k=1                            1.00  0.7660  0.7984
+curtailed k=1                        1.00  0.7660  0.7984
+fixed k=3                            3.00  0.8123  0.8564
+curtailed k=3                        2.29  0.8133  0.8575
+fixed k=5                            5.00  0.8400  0.8951
+curtailed k=5                        3.59  0.8401  0.8968
+fixed k=9                            9.00  0.8541  0.9252
+curtailed k=9                        6.08  0.8552  0.9259
+fixed k=17                          17.00  0.8630  0.9451
+curtailed k=17                      11.00  0.8628  0.9451
+fixed k=33                          33.00  0.8676  0.9600
+curtailed k=33                      20.80  0.8679  0.9604
+fixed k=65                          65.00  0.8716  0.9714
+curtailed k=65                      40.35  0.8715  0.9710
+fixed k=129                        129.00  0.8746  0.9794
+curtailed k=129                     79.38  0.8748  0.9796
+fixed k=256                        256.00  0.8780  0.9855
+curtailed k=256                    156.95  0.8781  0.9856
+certified a=0.2                     30.45  0.8775  0.9835       142.2   4.67x
+certified a=0.05                    42.13  0.8778  0.9854       149.0   3.54x
+bayes conf=0.9 cap=64                9.24  0.8690  0.9652        26.8   2.90x
+bayes conf=0.95 cap=64              12.50  0.8707  0.9696        35.7   2.86x
+bayes conf=0.99 cap=64              18.04  0.8720  0.9712        46.0   2.55x
+bayes conf=0.95 cap=256             20.90  0.8765  0.9806       118.2   5.66x
+EB conf=0.9 cap=256                 10.27  0.8675  0.9579        20.1   1.95x
+EB conf=0.95 cap=256                15.48  0.8687  0.9631        25.3   1.63x
+EB conf=0.99 cap=256                33.04  0.8777  0.9840       147.1   4.45x
+EB conf=0.999 cap=256               46.37  0.8780  0.9854       153.9   3.32x
+streak m=3 else curt33              11.23  0.8673  0.9583        19.6   1.75x
+streak m=5 else curt33              13.86  0.8680  0.9602        21.2   1.53x
+_oracle mode (k=inf)                  inf  0.8819  1.0000
+_pass@any                             inf  1.0000     nan

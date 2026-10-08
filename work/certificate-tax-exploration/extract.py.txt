@@ -1,0 +1,33 @@
+"""Stream a monkey_business JSON file -> per-question answer counts (+ which answers are correct).
+Output: npz-able pickle: list of dicts {answers: {ans: count}, correct: set(ans), n}"""
+import json, re, sys, pickle, collections
+def norm(a):
+    a = a.strip().rstrip('.').replace(',', '').replace('$', '').strip()
+    try:
+        f = float(a); return str(int(f)) if f == int(f) else repr(f)
+    except Exception: return a
+def ans_gsm(s):
+    m = re.search(r'####\s*([^\n]*)', s); return norm(m.group(1)) if m else None
+def ans_math(s):
+    # last \boxed{...} with brace matching, else "final answer is"
+    i = s.rfind('\\boxed{')
+    if i >= 0:
+        j = i+7; depth = 1; k = j
+        while k < len(s) and depth:
+            depth += {'{':1,'}':-1}.get(s[k],0); k += 1
+        return s[j:k-1].strip().replace(' ', '')
+    m = re.search(r'final answer is\s*\$?([^\n$]*)', s); return m.group(1).strip().replace(' ','') if m else None
+fn, out = sys.argv[1], sys.argv[2]
+f = ans_math if 'MATH' in fn else ans_gsm
+data = json.load(open(fn))
+res = []
+for r in data:
+    cnt = collections.Counter(); corr = collections.Counter()
+    for s, ok in zip(r['samples'], r['is_corrects']):
+        a = f(s); cnt[a] += 1
+        if ok: corr[a] += 1
+    # an answer key counts as correct if the majority of its samples are labelled correct
+    correct = {a for a in cnt if corr[a] > cnt[a]/2}
+    res.append(dict(answers=dict(cnt), correct=correct, n=len(r['samples']), purity=sum(max(corr[a], cnt[a]-corr[a]) for a in cnt)/len(r['samples'])))
+pickle.dump(res, open(out, 'wb'))
+print(fn, len(res), 'questions; n/q', sorted({r['n'] for r in res})[:5], 'label purity min', min(r['purity'] for r in res))

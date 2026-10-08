@@ -1,0 +1,112 @@
+"""Exp 1: oracle frontier for a Bernoulli threshold decision (is p > c?).
+
+Policies, all scored against the TRUE side of c (not the B->inf MC answer, which is the same thing here):
+  fixed-B        : n=B, decide S > cB (ties -> coin)
+  curtailed-B    : same decision, stop once it is determined
+  certified      : one-sided truncated-Beta(1,1) mixture LR vs p=c, alpha split; decide at Mmax if unresolved
+  bayes-oracle   : DP-optimal policy for the known prior, min E[n] + L*P(err), sweep L
+Prior: logit(p) = logit(c) + Laplace(0, tau).
+"""
+import sys, time
+import numpy as np
+from scipy.special import expit, logit, betainc, betaln
+from scipy.stats import binom
+
+rng = np.random.default_rng(20261007)
+
+def prior_grid(c, tau, G=801):
+    z = np.linspace(-12*tau, 12*tau, G)
+    w = np.exp(-np.abs(z)/tau); w /= w.sum()
+    p = expit(logit(c) + z)
+    keep = (p > 1e-12) & (p < 1-1e-12) & (z != 0)
+    return p[keep], w[keep]/w[keep].sum()
+
+def bayes_frontier(c, p, w, Ls, Nmax):
+    logp, log1p = np.log(p), np.log1p(-p)
+    above = p > c
+    out = []
+    for L in Ls:
+        # backward DP; store V, En, Eerr per row (S index 0..n)
+        Vn = En = Ee = None
+        for n in range(Nmax, -1, -1):
+            S = np.arange(n+1)
+            ll = S[:,None]*logp[None,:] + (n-S)[:,None]*log1p[None,:] + np.log(w)[None,:]
+            ll -= ll.max(1, keepdims=True); post = np.exp(ll); post /= post.sum(1, keepdims=True)
+            Pa = post[:, above].sum(1); perr = np.minimum(Pa, 1-Pa)
+            stopV = L*perr
+            if n == Nmax:
+                V, en, ee = stopV, np.zeros(n+1), perr
+            else:
+                q = post @ p  # predictive P(X=1)
+                contV = 1 + q*Vn[1:] + (1-q)*Vn[:-1]
+                cont = contV < stopV
+                V = np.where(cont, contV, stopV)
+                en = np.where(cont, 1 + q*En[1:] + (1-q)*En[:-1], 0.0)
+                ee = np.where(cont, q*Ee[1:] + (1-q)*Ee[:-1], perr)
+            Vn, En, Ee = V, en, ee
+        out.append((L, En[0], Ee[0]))
+    return out
+
+def fixed_curve(c, p, w, Bs):
+    res = []
+    for B in Bs:
+        k = np.floor(c*B)  # decide "above" iff S > k
+        pa = 1 - binom.cdf(k, B, p)  # P(decide above | p)
+        # (no exact ties when cB non-integer; fine)
+        err = np.where(p > c, 1-pa, pa)
+        res.append((B, float(w @ err)))
+    return res
+
+def sample_p(c, tau, n):
+    z = rng.laplace(0, tau, n)
+    return expit(logit(c)+z)
+
+def sim_curtailed(c, ps, B):
+    # decide above iff S >= k+1 where k=floor(cB). stop at k+1-th success or (B-k)-th failure.
+    k = int(np.floor(c*B)); need_s, need_f = k+1, B-k
+    # time of need_s-th success ~ need_s + NegBin(need_s, p) failures
+    ts = need_s + rng.negative_binomial(need_s, ps)
+    tf = need_f + rng.negative_binomial(need_f, 1-ps)
+    t = np.minimum(np.minimum(ts, tf), B)
+    return float(t.mean())
+
+def certified_sim(c, ps, alpha, Mmax, check=1):
+    thr = np.log(2/alpha)
+    n_out = np.full(len(ps), Mmax); wrong = np.zeros(len(ps), bool); abst = np.zeros(len(ps), bool)
+    for i, p in enumerate(ps):
+        x = rng.random(Mmax) < p
+        S = np.cumsum(x); n = np.arange(1, Mmax+1)
+        # log mixture over p in (c,1) vs c, uniform prior on (c,1): int_c^1 p^S(1-p)^(n-S) dp/(1-c) / c^S(1-c)^(n-S)
+        lb = betaln(S+1, n-S+1)
+        tail_up = np.log(np.clip(1-betainc(S+1, n-S+1, c), 1e-300, None))
+        tail_dn = np.log(np.clip(betainc(S+1, n-S+1, c), 1e-300, None))
+        base = S*np.log(c) + (n-S)*np.log1p(-c)
+        Mup = lb + tail_up - np.log(1-c) - base
+        Mdn = lb + tail_dn - np.log(c) - base
+        hit = np.where((Mup >= thr) | (Mdn >= thr))[0]
+        if len(hit):
+            j = hit[0]; n_out[i] = j+1; dec_above = Mup[j] >= thr
+        else:
+            abst[i] = True; dec_above = S[-1] > c*Mmax
+        wrong[i] = dec_above != (p > c)
+    return float(n_out.mean()), float(wrong.mean()), float(abst.mean())
+
+if __name__ == "__main__":
+    c = float(sys.argv[1]); tau = float(sys.argv[2]); Nmax = int(sys.argv[3])
+    p, w = prior_grid(c, tau)
+    print(f"# c={c} tau={tau} Nmax={Nmax}")
+    Bs = [b for b in [1,3,5,9,15,31,63,127,255,511,1023,2047,4095,8191,16383] if b <= 4*Nmax]
+    fc = fixed_curve(c, p, w, Bs)
+    ps = sample_p(c, tau, 20000)
+    print("fixed/curtailed: B  err  curtailed_mean_n")
+    for B, e in fc:
+        print(f"  {B:6d}  {e:.4f}  {sim_curtailed(c, ps, B):9.1f}")
+    t=time.time()
+    Ls = [10, 30, 100, 300, 1000, 3000, 10000, 30000, 1e5]
+    bf = bayes_frontier(c, p, w, Ls, Nmax)
+    print(f"bayes oracle (dp {time.time()-t:.0f}s): L  E[n]  err")
+    for L, en, ee in bf:
+        print(f"  {L:8.0f}  {en:9.1f}  {ee:.4f}")
+    print("certified (anytime, mixture LR): alpha  mean_n  err  abstain  [Mmax=4*Nmax, 1500 cases]")
+    for a in [0.2, 0.05, 0.01]:
+        print(f"  {a:5.2f}  " + "  ".join(f"{v:.4f}" if i else f"{v:9.1f}" for i, v in enumerate(certified_sim(c, ps[:1500], a, 4*Nmax))))

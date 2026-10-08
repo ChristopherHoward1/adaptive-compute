@@ -10,6 +10,7 @@ Load a doc only when a task names it. Nothing in this directory is hot context.
 
 - `anytime-valid-band.md` — the adaptive band's instrument, and why a zero-draw plug-in rule dominates the mean estimand.
 - `bootstrap-seed-and-determinism.md` — seeding and draw-accounting contract for any Monte-Carlo consumer.
+- `certificate-tax.md` — exploratory: Bayes-oracle bound shows adaptivity is worth 2–6× and the per-case certificate eats it; LLM self-consistency is where it pays.
 - `controlled-retest-discipline.md` — how to re-test a released result under a swapped component.
 - `decisions.md` — older decisions archived from `PLAN.md`.
 - `equivalence-band-savings.md` — why fixed-B structurally beats adaptive inside `[−δ, +δ]`.
