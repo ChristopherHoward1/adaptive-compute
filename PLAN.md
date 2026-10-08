@@ -31,6 +31,8 @@ Older decisions: `knowledge/decisions.md`.
 
 - 2026-09-26 — **Research line closed; permutation-test unit withdrawn at plan stage.** Prototype (30 datasets × 100 features, Bonferroni) looked 24× cheaper than certified fixed-B, but that baseline was a strawman: curtailed certified fixed-B brings it to 0.4–1.7×, and curtailed plain fixed-B (Besag–Clifford, valid at any B) is cheaper still. The adaptive rule is Gandy (2009); the BH/FDR extension has MMCTest/AMT as ancestors. Owner closed the line on the four-setup negative. Lesson: any certified baseline must itself be curtailed. — `knowledge/permutation-test-savings.md`, `work/permutation-test-savings/plan.md`.
 
+- 2026-10-08 — **Self-consistency unit withdrawn at plan stage; the line stays closed.** The certificate-tax exploration's GSM8K "certified rule pays 3–6×" was measured against curtailed k=129 on a flat accuracy curve. At a matched 0.005 margin the certified rule is 0.4× (70B) and 1.3× (8B) of curtailed fixed-k. Positive only at zero margin. Fifth setup fitting the pattern. Lesson: gate certified comparisons on the matched curtailed *frontier*, never a fixed-k anchor. — `work/self-consistency-allocation/plan.md`, `knowledge/certificate-tax.md`.
+
 ## Risks
 
 - **Novelty is thin by design.** The stopping guarantee is Gandy (2009) / confidence sequences; our contribution is empirical (savings + uniform false-stop on equivalence-band comparison). If that residual collapses under a closer reading, narrow the question — don't inflate it. — `docs/prior-art.md`.
