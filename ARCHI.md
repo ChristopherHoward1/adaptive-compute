@@ -28,7 +28,7 @@ Python 3.12 (`src/` layout, numpy-only runtime) for the research code, plus the 
 - **The loop:** `/1-plan` → `/2-implement` → `/3-review` → `/4-release` → `/5-retro`, invoked as skills.
 - **`scripts/gate.sh`** — auto-detects stacks (Python + Shell), runs checks + `gate.d/` hooks. Exit 0 = pass.
 - **`python -m adaptive_compute.eval`** — `--check` (gate self-check), `--run` (v0 benchmark → `work/adaptive-procedure/results.*`), `--compare` (EB vs betting A/B), `--equiv-probe` (equivalence-band probe). All but `--check` are offline, outside the gate.
-- **`scripts/release.sh <slug>`** — local divergence: `tag-after-merge` tags the release commit found by its `VERSION` transition on `origin/main` (any merge strategy), guarded by `origin/main:VERSION == version`.
+- **`scripts/release.sh <slug>`** — requires `Code-review verdict: APPROVE` plus either `Codex-review verdict: APPROVE` or an Owner-authorized override (`Codex-review verdict: OVERRIDDEN` + one column-0 `Codex override:` reason, a blocking last verdict in `codex-review.md`, a non-empty `deferrals.md`; the reason lands in `CHANGELOG.md`); `state.sh` applies the same plan-text rules. Local divergence: `tag-after-merge` tags the release commit found by its `VERSION` transition on `origin/main` (any merge strategy), guarded by `origin/main:VERSION == version`.
 
 ## Conventions
 
