@@ -80,6 +80,7 @@ prepend_changelog() {
   local version="$1"
   local release_note="$2"
   local confirm_delta="$3"
+  local override_reason="$4"
   local date_stamp
   local tmp
 
@@ -95,7 +96,11 @@ prepend_changelog() {
     fi
     printf '## [%s] - %s\n\n' "$version" "$date_stamp"
     printf '%s\n' "- $release_note"
-    printf '%s\n\n' "- Confirm-delta: $confirm_delta"
+    printf '%s\n' "- Confirm-delta: $confirm_delta"
+    if [[ -n "$override_reason" ]]; then
+      printf '%s\n' "- Codex override: $override_reason"
+    fi
+    printf '\n'
     if [[ -f CHANGELOG.md ]]; then
       sed -n '/^## /,$p' CHANGELOG.md
     fi
@@ -108,8 +113,33 @@ check_verdict() {
   local plan_path="$1"
   grep -qx 'Code-review verdict: APPROVE' "$plan_path" \
     || die "$plan_path must contain exact line: Code-review verdict: APPROVE"
-  grep -qx 'Codex-review verdict: APPROVE' "$plan_path" \
-    || die "$plan_path must contain exact line: Codex-review verdict: APPROVE"
+  local artifact="${plan_path%/*}/codex-review.md"
+  local deferrals="${plan_path%/*}/deferrals.md"
+  local approved=false overridden=false reason verdict_line verdict
+  grep -qx 'Codex-review verdict: APPROVE' "$plan_path" && approved=true
+  grep -qx 'Codex-review verdict: OVERRIDDEN' "$plan_path" && overridden=true
+  [[ "$approved" != true || "$overridden" != true ]] \
+    || die "$plan_path contains contradictory Codex-review verdicts"
+  [[ "$approved" != true ]] || return 0
+  [[ "$overridden" == true ]] \
+    || die "$plan_path must contain exact line: Codex-review verdict: APPROVE or Codex-review verdict: OVERRIDDEN"
+  [[ "$(grep -c '^Codex override:' "$plan_path")" -eq 1 ]] \
+    || die "$plan_path must contain exactly one Codex override: line"
+  reason=$(grep '^Codex override:' "$plan_path")
+  reason=${reason#Codex override:}
+  reason=${reason#"${reason%%[![:space:]]*}"}
+  reason=${reason%"${reason##*[![:space:]]}"}
+  [[ -n "$reason" ]] || die "$plan_path has an empty Codex override reason"
+  [[ -f "$artifact" ]] || die "missing $artifact"
+  verdict_line=$(grep -E '^[[:space:]]*Codex verdict:' "$artifact" | tail -n 1 || true)
+  verdict=${verdict_line#"${verdict_line%%[![:space:]]*}"}
+  verdict=${verdict#Codex verdict:}
+  verdict=${verdict#"${verdict%%[![:space:]]*}"}
+  verdict=${verdict%"${verdict##*[![:space:]]}"}
+  [[ "$verdict" == 'REQUEST CHANGES' ]] \
+    || die "$artifact must have REQUEST CHANGES as its last Codex verdict"
+  [[ -s "$deferrals" ]] || die "$deferrals must exist and be non-empty"
+  printf '%s\n' "$reason"
 }
 
 check_gate() {
@@ -216,6 +246,7 @@ release() {
   local new_version
   local release_note
   local pre_release_head
+  local override_reason
 
   worktree_for_branch main >/dev/null \
     || die "main must be checked out in the primary worktree"
@@ -229,7 +260,7 @@ release() {
   current_version=$(<VERSION)
   new_version=$(next_version "$current_version")
 
-  check_verdict "$plan_path"
+  override_reason=$(check_verdict "$plan_path")
   check_clean_worktree "$release_checkout" "$release_branch"
   check_origin_main_ancestor "$release_branch"
   check_previous_retro
@@ -244,7 +275,7 @@ release() {
   trap 'rollback_release "$pre_release_head"' ERR
 
   printf '%s\n' "$new_version" >VERSION
-  prepend_changelog "$new_version" "$release_note" "$confirm_delta"
+  prepend_changelog "$new_version" "$release_note" "$confirm_delta" "$override_reason"
   printf '%s\n' "$slug" >work/.last-released
 
   git add VERSION CHANGELOG.md work/.last-released
