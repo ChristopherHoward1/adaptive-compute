@@ -16,6 +16,7 @@ Load a doc only when a task names it. Nothing in this directory is hot context.
 - `equivalence-band-savings.md` — why fixed-B structurally beats adaptive inside `[−δ, +δ]`.
 - `permutation-test-savings.md` — permutation-test plan-stage prototype; curtailment dominates, research line closed.
 - `release-tagging.md` — how `release.sh tag-after-merge` finds the release commit.
+- `review-sentinels.md` — how `state.sh`/`release.sh` read verdict sentinels (whole-file, column-0), the Codex-override shape, and the self-match hazard.
 - `research-doc-citations.md` — citation rules for docs that cite literature.
 - `shap-topk-savings.md` — SHAP top-k plan-stage prototype and why the unit was withdrawn.
 - `shell-argument-safety.md` — the leading-dash trap in shell scripts.
