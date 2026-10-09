@@ -1,6 +1,6 @@
 # Release on the anchor's APPROVE with a recorded Owner override of Codex
 
-**Slug:** release-anchor-approve-path · **Date:** 2026-10-08 · **Status:** approved
+**Slug:** release-anchor-approve-path · **Date:** 2026-10-08 · **Status:** implemented
 
 ## Goal
 
@@ -132,3 +132,15 @@ Release note: `release.sh` and `state.sh` accept an anchor-APPROVE close-out wit
 3. Indented case (b) also asserts `CHANGELOG.md` has exactly one `- Codex override:` line.
 
 Plan verdict: APPROVE
+
+### Code review (/3-review) — round 1, dual APPROVE
+
+Two cold reviewers on the round-1 diff (`363ae0c`). Gate green (245/245), verified independently by the Orchestrator and the `code-reviewer`.
+- **`code-reviewer` (anchor):** APPROVE, no CRITICAL/HIGH. It checked all acceptance criteria as met with named tests, confirmed the footprint is clean, and confirmed that `state.sh` and `release.sh` apply the same plan-text rules. Three LOWs, recorded and not sent back:
+  1. The step-3 sentence "Exit 1 may close only through the step-6 override" could be misread as ruling out the normal followup flow. Suggested rewording: "the only sentinel an exit-1 run can close with is the step-6 override."
+  2. There is no test for APPROVE + OVERRIDDEN with no override line. It is still refused, because the contradiction check runs first.
+  3. `${plan_path%/*}` assumes `plan_path` contains a slash. It always does today.
+- **Codex (`codex-review.sh`, exit 0):** APPROVE, no substantive findings.
+
+Code-review verdict: APPROVE
+Codex-review verdict: APPROVE
