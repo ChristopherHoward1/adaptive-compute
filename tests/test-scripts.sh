@@ -91,6 +91,7 @@ setup_release_fixture() {
   local codex_verdict_line="${6-Codex-review verdict: APPROVE}"
   local marker_slug="${7-}"
   local retro_content="${8-__missing__}"
+  local artifact_mode="${9-}"
   local tmp_root="$TMP/$name"
 
   REL_PRIMARY="$tmp_root/primary"
@@ -140,6 +141,19 @@ EOF
         printf '%s\n' "$codex_verdict_line"
       fi
     } >work/demo/plan.md
+    if [[ -n "$artifact_mode" ]]; then
+      if [[ "$artifact_mode" != missing-codex ]]; then
+        printf 'Codex verdict: APPROVE\n  Codex verdict: REQUEST CHANGES\n' >work/demo/codex-review.md
+        if [[ "$artifact_mode" == approved-codex ]]; then
+          printf 'Codex verdict: APPROVE\n' >>work/demo/codex-review.md
+        fi
+      fi
+      if [[ "$artifact_mode" != missing-deferrals ]]; then
+        : >work/demo/deferrals.md
+        [[ "$artifact_mode" == empty-deferrals ]] || printf 'D-x deferred\n' >work/demo/deferrals.md
+      fi
+      printf '## [x] - date\n\n- Prior note.\n' >>CHANGELOG.md
+    fi
     [[ "$gate_mode" == fail ]] && printf 'fail\n' >GATE_FAIL
     if [[ -n "$marker_slug" ]]; then
       printf '%s\n' "$marker_slug" >work/.last-released
@@ -1740,6 +1754,72 @@ check "release version compare accepts .10 over .9" bash scripts/release.sh chec
 check_fails "release version compare rejects .9 after .10" bash scripts/release.sh check-version 2026.8.9 2026.8.10
 
 # --- release.sh refusals and happy path in the mandated worktree topology
+# Override plan-text rules are pinned in both consumers; artifacts are release-only.
+for override_case in happy missing-reason empty-reason whitespace duplicate missing-codex approved-codex missing-deferrals empty-deferrals no-anchor contradictory indented-only indented-extra standard stray; do
+  override_lines=$'Codex-review verdict: OVERRIDDEN\nCodex override: Owner authorized — anchor cleared D-x \t'
+  artifact_mode=valid
+  anchor='Code-review verdict: APPROVE'
+  expected_review=pending
+  expected_error='Codex override'
+  case "$override_case" in
+    happy) expected_review=approve ;;
+    missing-reason) override_lines='Codex-review verdict: OVERRIDDEN' ;;
+    empty-reason) override_lines=$'Codex-review verdict: OVERRIDDEN\nCodex override:' ;;
+    whitespace) override_lines=$'Codex-review verdict: OVERRIDDEN\nCodex override: \t ' ;;
+    duplicate) override_lines+=$'\nCodex override: second' ;;
+    missing-codex|approved-codex) artifact_mode="$override_case"; expected_review=approve; expected_error=codex-review.md ;;
+    missing-deferrals|empty-deferrals) artifact_mode="$override_case"; expected_review=approve; expected_error=deferrals.md ;;
+    no-anchor) anchor='Plan verdict: APPROVE'; expected_error='Code-review verdict: APPROVE' ;;
+    contradictory) override_lines+=$'\nCodex-review verdict: APPROVE'; expected_error='contradictory' ;;
+    indented-only) override_lines=$'Codex-review verdict: OVERRIDDEN\n  Codex override: ignored' ;;
+    indented-extra) override_lines+=$'\n  Codex override: ignored'; expected_review=approve ;;
+    standard) override_lines='Codex-review verdict: APPROVE'; expected_review=approve ;;
+    stray) override_lines=$'Codex-review verdict: APPROVE\nCodex override: x'; expected_review=approve ;;
+  esac
+  setup_state_fixture "state-override-$override_case" review-gate
+  printf '%s\n%s\n' "$anchor" "$override_lines" >>"$STATE_REPO/work/demo/plan.md"
+  check "state override $override_case gives $expected_review" bash -c "
+    cd '$STATE_REPO' && bash scripts/state.sh demo >state.out &&
+    grep -qx 'review: $expected_review' state.out
+  "
+  if [[ "$override_case" == happy ]]; then
+    check "state override closes out to release" bash -c "
+      cd '$STATE_REPO' && bash scripts/state.sh demo >state.out &&
+      grep -qx 'stage: release' state.out && grep -qx 'next_action: /4-release' state.out
+    "
+  fi
+  setup_release_fixture "release-override-$override_case" 2026.8.9 "$anchor" pass fresh "$override_lines" "" __missing__ "$artifact_mode"
+  case "$override_case" in
+    happy|indented-extra|standard|stray)
+      check_exit "release override $override_case accepted" 0 "" bash -c "cd '$REL_WORKTREE' && PATH='$REL_FAKEBIN':\$PATH bash scripts/release.sh demo"
+      {
+        printf '# Changelog\n\nAll notable changes to this project are documented in this file.\n\n'
+        printf '## [2026.8.10] - 2026-08-16\n\n- Demo release note.\n- Confirm-delta: none\n'
+        if [[ "$override_case" == happy || "$override_case" == indented-extra ]]; then
+          printf '%s\n' '- Codex override: Owner authorized — anchor cleared D-x'
+        fi
+        printf '\n## [x] - date\n\n- Prior note.\n'
+      } >"$TMP/expected-changelog"
+      if [[ "$override_case" == happy || "$override_case" == indented-extra ]]; then
+        check "release $override_case has exactly one override bullet" bash -c "[[ \$(grep -c '^- Codex override:' '$REL_WORKTREE/CHANGELOG.md') -eq 1 ]]"
+      fi
+      check "release $override_case changelog is byte-exact" cmp "$TMP/expected-changelog" "$REL_WORKTREE/CHANGELOG.md"
+      check "release $override_case commits next version" bash -c "[[ \$(git -C '$REL_WORKTREE' log -1 --format=%s) == 'Release v2026.8.10' ]]"
+      ;;
+    *)
+      before_head=$(git -C "$REL_WORKTREE" rev-parse HEAD)
+      cp "$REL_WORKTREE/VERSION" "$TMP/before-version"
+      cp "$REL_WORKTREE/CHANGELOG.md" "$TMP/before-changelog"
+      check_exit "release override $override_case refused" 1 "$expected_error" bash -c "cd '$REL_WORKTREE' && PATH='$REL_FAKEBIN':\$PATH bash scripts/release.sh demo"
+      check "release override $override_case refuses before writes" bash -c "
+        cmp '$TMP/before-version' '$REL_WORKTREE/VERSION' &&
+        cmp '$TMP/before-changelog' '$REL_WORKTREE/CHANGELOG.md' &&
+        [[ \$(git -C '$REL_WORKTREE' rev-parse HEAD) == '$before_head' ]]
+      "
+      ;;
+  esac
+done
+
 setup_release_fixture release-no-verdict 2026.8.9 "Plan verdict: APPROVE" pass fresh
 check_fails "release refuses without code-review approval" bash -c "cd '$REL_WORKTREE' && PATH='$REL_FAKEBIN':\$PATH bash scripts/release.sh demo"
 

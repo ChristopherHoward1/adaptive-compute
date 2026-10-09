@@ -41,10 +41,19 @@ else
   plan=$(<"$plan_path")
 fi
 
-if has_line 'Code-review verdict: APPROVE' && has_line 'Codex-review verdict: APPROVE'; then
-  review=approve
-else
-  review=pending
+approved=false overridden=false
+has_line 'Codex-review verdict: APPROVE' && approved=true
+has_line 'Codex-review verdict: OVERRIDDEN' && overridden=true
+reason=$(sed -n 's/^Codex override://p' <<<"$plan")
+reason=${reason#"${reason%%[![:space:]]*}"}
+reason=${reason%"${reason##*[![:space:]]}"}
+review=pending
+if has_line 'Code-review verdict: APPROVE' && [[ "$approved" != "$overridden" ]]; then
+  if [[ "$approved" == true ]] || {
+    [[ "$(grep -c '^Codex override:' <<<"$plan")" -eq 1 && -n "$reason" ]]
+  }; then
+    review=approve
+  fi
 fi
 
 last_released=
