@@ -1,6 +1,6 @@
 # eval --check equivalence-resolution guard
 
-**Slug:** eval-check-resolution-guard · **Date:** 2026-10-09 · **Status:** approved
+**Slug:** eval-check-resolution-guard · **Date:** 2026-10-09 · **Status:** implemented
 
 ## Goal
 
@@ -97,4 +97,17 @@ Round 4 (fresh plan-reviewer): APPROVE of revision 4. It re-ran every guard case
 - Patch with `monkeypatch.setattr(benchmark, "DEFAULT_CANDIDATES", {...})`, never by mutating the dict in place, so the R1 grid does not leak into `test_benchmark.py`.
 
 Plan verdict: APPROVE
+
+### Code review
+
+Round 1: dual APPROVE.
+- The `code-reviewer` agent confirmed all 10 acceptance criteria against the code, ran the gate (PASS), saw `eval --check` print `draws_consumed=8656`, and ran the new tests under `-p no:capture` (5 passed).
+- Codex returned no substantive findings.
+
+Two LOW findings, recorded and not blocking:
+- The single failure message covers two cases: hitting `b_max` while still undecided, and stopping early with a wrong directional decision. A future edit could print the decision and the draw count.
+- When the largest `b_max` is tied, `max` tests only the first candidate. This falls inside the accepted scope limit of checking the largest candidate only.
+
+Code-review verdict: APPROVE
+Codex-review verdict: APPROVE
 
