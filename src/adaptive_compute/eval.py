@@ -8,6 +8,7 @@ from pathlib import Path
 
 import numpy as np
 
+from adaptive_compute import benchmark
 from adaptive_compute.adaptive import adaptive_decision
 from adaptive_compute.benchmark import (
     AdaptiveParams,
@@ -53,8 +54,39 @@ def _hard_member_mcse(member: str, replications: int = 6) -> float:
     return float(np.std(estimates, ddof=1))
 
 
-def _check() -> int:
+def _equivalence_guard() -> tuple[str | None, int]:
+    params, _generator = BATTERY["small_effect"]
+    scores_a, scores_b, y = generate(params)
+    expected = decision_from_delta(delta(scores_a, scores_b, y), DEFAULT_DELTA)
     total_draws = 0
+    for instrument in ("eb", "betting"):
+        candidate = max(benchmark.DEFAULT_CANDIDATES[instrument], key=lambda item: item.b_max)
+        result = adaptive_decision(
+            scores_a,
+            scores_b,
+            y,
+            b=candidate.b,
+            alpha=candidate.alpha,
+            b_max=candidate.b_max,
+            instrument=instrument,
+            margin=DEFAULT_DELTA,
+            seed=12345,
+        )
+        total_draws += result.draws_consumed
+        if result.decision != expected or result.draws_consumed >= candidate.b_max:
+            return (
+                f"adaptive ({instrument}) did not certify small_effect equivalence "
+                f"before B_max={candidate.b_max}",
+                total_draws,
+            )
+    return None, total_draws
+
+
+def _check() -> int:
+    failure, total_draws = _equivalence_guard()
+    if failure is not None:
+        print(failure, file=sys.stderr)
+        return 1
     for name, (params, _generator) in BATTERY.items():
         scores_a, scores_b, y = generate(params)
         plugin_delta = delta(scores_a, scores_b, y)
