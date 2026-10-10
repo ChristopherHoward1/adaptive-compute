@@ -3,6 +3,11 @@
 All notable changes to this project are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/), and versions use CalVer
 (`YYYY.M.MICRO`). Entries below are written only by `scripts/release.sh`.
+## [2026.10.1] - 2026-10-09
+
+- `eval --check` now fails if either adaptive instrument's largest default tuning candidate cannot certify the equivalence-stratum member within its `b_max`, so a tuning grid sized too small to ever stop (the adaptive-procedure R1 failure) is caught by the gate.
+- Confirm-delta: none
+
 ## [2026.10.0] - 2026-10-09
 
 - `release.sh` and `state.sh` accept an anchor-APPROVE close-out with an Owner-authorized, artifact-checked Codex override, so the reviewer-calibration norm no longer conflicts with the release gate.

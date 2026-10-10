@@ -42,6 +42,17 @@ class AdaptiveParams:
     b_max: int
 
 
+DEFAULT_CANDIDATES: dict[AdaptiveInstrument, tuple[AdaptiveParams, ...]] = {
+    "eb": (
+        AdaptiveParams(b=32, alpha=DEFAULT_ALPHA, b_max=1024),
+        AdaptiveParams(b=64, alpha=DEFAULT_ALPHA, b_max=2048),
+    ),
+    "betting": tuple(
+        AdaptiveParams(b=64, alpha=DEFAULT_ALPHA, b_max=b_max) for b_max in (128, 256, 512, 1024)
+    ),
+}
+
+
 @dataclass(frozen=True)
 class MemberRun:
     member: str
@@ -174,16 +185,7 @@ def _tune_params(
     candidates: tuple[AdaptiveParams, ...] | None = None,
 ) -> AdaptiveParams:
     if candidates is None:
-        if instrument == "eb":
-            candidates = (
-                AdaptiveParams(b=32, alpha=DEFAULT_ALPHA, b_max=1024),
-                AdaptiveParams(b=64, alpha=DEFAULT_ALPHA, b_max=2048),
-            )
-        else:
-            candidates = tuple(
-                AdaptiveParams(b=64, alpha=DEFAULT_ALPHA, b_max=b_max)
-                for b_max in (128, 256, 512, 1024)
-            )
+        candidates = DEFAULT_CANDIDATES[instrument]
     best = candidates[0]
     best_score = (1.0, 1.0, float(DEFAULT_B_MAX))
     for candidate in candidates:
