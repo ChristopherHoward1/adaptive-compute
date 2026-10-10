@@ -56,3 +56,5 @@ passed the gate while guarding nothing. The gate runs tests; it cannot tell a ta
 from a real assertion. Write each guard-test so that the bug it guards against would make
 it red: perturb the future and require an earlier value unchanged; reconstruct the shared
 stream and require each arm's *consumed* prefix to equal it — never `x == x`.
+
+A guard named for a **specific past failure** has a stricter version of this bar. It must fail on *that failure's actual configuration*, reconstructed from its commit (`git show <sha>:path`), not on an analogue built on today's code. It must also read the setting the failure actually got wrong. In `eval-check-resolution-guard`, the first draft read a fixed check budget (1024) and was shown to fail with a 320-draw cap on today's EB boundary. R1's real defect was the *tuning grid's* `b_max=320`, and on R1's own boundary the draft still certified at 832 < 1024, so it passed. The shipped guard reads `benchmark.DEFAULT_CANDIDATES`, and its test patches in R1's grid.
