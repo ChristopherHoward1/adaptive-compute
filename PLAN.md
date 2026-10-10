@@ -8,8 +8,8 @@ Build the **Adaptive Compute** research system through the agentic-coding harnes
 
 ## Now
 
-- **Shipped through v2026.10.0** — see `CHANGELOG.md` and `work/<slug>/retro.md`.
-- **Research line closed (2026-09-26)** on the negative: across four setups the anytime-valid certificate never paid for itself (see Decisions, 2026-09-26; `README.md` → Result). Mechanical `/1-plan` candidate still queued: **`eval-check-resolution-guard`**.
+- **Shipped through v2026.10.1** — see `CHANGELOG.md` and `work/<slug>/retro.md`.
+- **Research line closed (2026-09-26)** on the negative: across four setups the anytime-valid certificate never paid for itself (see Decisions, 2026-09-26; `README.md` → Result). Mechanical `/1-plan` candidate queued: **`linked-checkout-preflight`** — make `worktree.sh add` / `codex-review.sh` refuse outside the primary checkout (`work/eval-check-resolution-guard/retro.md` Q4).
 
 ## Decisions
 
